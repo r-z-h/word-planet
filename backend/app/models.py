@@ -86,6 +86,14 @@ class Progress(Base):
     completed_knowledge_points: Mapped[list] = mapped_column(
         JSONB, nullable=False, default=list
     )
+    # 当前未作答、下次进入答题页要恢复的那道题
+    last_question_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("questions.id"), nullable=True
+    )
+    # 水平测试里已经出过的题，学习阶段优先避开
+    test_seen_question_ids: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

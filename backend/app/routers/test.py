@@ -35,6 +35,31 @@ def _level_name(value: int) -> str:
     return f"L{value}"
 
 
+def _finish_test(db: Session, user: User, state: TestState) -> str:
+    """结算：写等级、落进度、记住测试出过的题（学习阶段优先避开）。"""
+    level_name = _level_name(state.level)
+    user.level = level_name
+    user.has_tested = True
+
+    first = first_kp_of_level(db, level_name)
+    progress = db.get(Progress, user.id)
+    if progress is None:
+        progress = Progress(
+            user_id=user.id,
+            completed_knowledge_points=[],
+            current_knowledge_point_id=None,
+        )
+        db.add(progress)
+
+    progress.current_knowledge_point_id = first.id if first else None
+    progress.last_question_id = None
+    progress.test_seen_question_ids = list(state.used_question_ids)
+
+    db.commit()
+    _test_sessions.pop(str(user.id), None)
+    return level_name
+
+
 def _pick_question(db: Session, state: TestState) -> Question | None:
     candidates = [state.level]
     if state.level > 1:
@@ -131,30 +156,12 @@ def answer_test(
     finished = state.answered >= MAX_QUESTIONS or state.unchanged_streak >= UNCHANGED_LIMIT
 
     if finished:
-        level_name = _level_name(state.level)
-        user.level = level_name
-        user.has_tested = True
-
-        first = first_kp_of_level(db, level_name)
-        progress = db.get(Progress, user.id)
-        if progress is None:
-            progress = Progress(
-                user_id=user.id, completed_knowledge_points=[], current_knowledge_point_id=None
-            )
-            db.add(progress)
-        progress.current_knowledge_point_id = first.id if first else None
-
-        db.commit()
-        _test_sessions.pop(str(user.id), None)
+        level_name = _finish_test(db, user, state)
         return TestAnswerResponse(is_finished=True, next_question=None, level=level_name)
 
     next_question = _pick_question(db, state)
     if next_question is None:
-        level_name = _level_name(state.level)
-        user.level = level_name
-        user.has_tested = True
-        db.commit()
-        _test_sessions.pop(str(user.id), None)
+        level_name = _finish_test(db, user, state)
         return TestAnswerResponse(is_finished=True, next_question=None, level=level_name)
 
     state.used_question_ids.add(str(next_question.id))

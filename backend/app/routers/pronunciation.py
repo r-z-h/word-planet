@@ -69,12 +69,16 @@ def next_pronunciation(user: User = Depends(require_tested), db: Session = Depen
             detail={"detail": "当前知识点没有跟读题", "code": "EMPTY_KNOWLEDGE_POINT"},
         )
 
+    progress = db.get(Progress, user.id)
+    if progress is not None and progress.last_question_id != question.id:
+        progress.last_question_id = question.id
+        db.commit()
+
     return PronunciationNextResponse(
         question=PronunciationQuestionOut(
             id=str(question.id), stem=question.stem, answer=str(question.answer)
         )
     )
-
 
 @router.post("/result", response_model=PronunciationResultResponse)
 def submit_pronunciation(
@@ -116,6 +120,11 @@ def submit_pronunciation(
         question_type="pronunciation",
         idempotency_key=payload.idempotency_key,
     )
+
+    progress = db.get(Progress, user.id)
+    if progress is not None and progress.last_question_id == question.id:
+        progress.last_question_id = None
+
     db.commit()
 
     return PronunciationResultResponse(

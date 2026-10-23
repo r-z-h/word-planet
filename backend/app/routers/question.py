@@ -71,28 +71,55 @@ def next_question(user: User = Depends(require_tested), db: Session = Depends(ge
             detail={"detail": "当前知识点没有题目", "code": "EMPTY_KNOWLEDGE_POINT"},
         )
 
-    question = db.execute(
-        _base_pool(kp.id)
-        .join(WrongQuestion, WrongQuestion.question_id == Question.id)
-        .where(
-            WrongQuestion.user_id == user.id,
-            WrongQuestion.consecutive_correct < MASTERY_STREAK,
-        )
-        .order_by(WrongQuestion.error_count.desc())
+    progress = db.get(Progress, user.id)
+    question = None
+
+    # 刚刚答过的那道题不要立刻重复出现（否则答错后马上又是同一题）
+    last_answered_id = db.execute(
+        select(Attempt.question_id)
+        .where(Attempt.user_id == user.id)
+        .order_by(Attempt.created_at.desc(), Attempt.id.desc())
         .limit(1)
     ).scalar_one_or_none()
 
+    # 1) 恢复上次未作答的那道题（中途退出后重新进来要看到同一题）
+    if progress is not None and progress.last_question_id is not None:
+        pending = db.get(Question, progress.last_question_id)
+        if (
+            pending is not None
+            and pending.knowledge_point_id == kp.id
+            and pending.question_type != "pronunciation"
+        ):
+            question = pending
+
+    # 2) 当前知识点未掌握的错题
     if question is None:
-        answered = select(Attempt.question_id).where(Attempt.user_id == user.id)
-        question = db.execute(
+        stmt = (
             _base_pool(kp.id)
-            .where(Question.id.notin_(answered))
-            .order_by(func.random())
-            .limit(1)
+            .join(WrongQuestion, WrongQuestion.question_id == Question.id)
+            .where(
+                WrongQuestion.user_id == user.id,
+                WrongQuestion.consecutive_correct < MASTERY_STREAK,
+            )
+        )
+        if last_answered_id is not None:
+            stmt = stmt.where(Question.id != last_answered_id)
+        question = db.execute(
+            stmt.order_by(WrongQuestion.error_count.desc()).limit(1)
         ).scalar_one_or_none()
 
+    # 3) 当前知识点没做过的题（跳过水平测试里已经出过的）
     if question is None:
-        question = db.execute(
+        seen_in_test = {uuid.UUID(x) for x in (progress.test_seen_question_ids or [])}
+        answered = select(Attempt.question_id).where(Attempt.user_id == user.id)
+        stmt = _base_pool(kp.id).where(Question.id.notin_(answered))
+        if seen_in_test:
+            stmt = stmt.where(Question.id.notin_(seen_in_test))
+        question = db.execute(stmt.order_by(func.random()).limit(1)).scalar_one_or_none()
+
+    # 4) 其他知识点的错题
+    if question is None:
+        stmt2 = (
             select(Question)
             .join(WrongQuestion, WrongQuestion.question_id == Question.id)
             .where(
@@ -101,10 +128,14 @@ def next_question(user: User = Depends(require_tested), db: Session = Depends(ge
                 Question.knowledge_point_id != kp.id,
                 Question.question_type != "pronunciation",
             )
-            .order_by(WrongQuestion.error_count.desc())
-            .limit(1)
+        )
+        if last_answered_id is not None:
+            stmt2 = stmt2.where(Question.id != last_answered_id)
+        question = db.execute(
+            stmt2.order_by(WrongQuestion.error_count.desc()).limit(1)
         ).scalar_one_or_none()
 
+    # 5) 当前知识点任意题（此时允许重复，包含测试出过的）
     if question is None:
         question = db.execute(_base_pool(kp.id).order_by(func.random()).limit(1)).scalar_one_or_none()
 
@@ -113,6 +144,10 @@ def next_question(user: User = Depends(require_tested), db: Session = Depends(ge
             status_code=409,
             detail={"detail": "当前知识点没有题目", "code": "EMPTY_KNOWLEDGE_POINT"},
         )
+
+    if progress is not None and progress.last_question_id != question.id:
+        progress.last_question_id = question.id
+        db.commit()
 
     return QuestionNextResponse(
         question={
@@ -173,6 +208,11 @@ def submit_answer(
         question_type="question",
         idempotency_key=payload.idempotency_key,
     )
+
+    progress = db.get(Progress, user.id)
+    if progress is not None and progress.last_question_id == question.id:
+        progress.last_question_id = None
+
     db.commit()
 
     return AnswerSubmitResponse(

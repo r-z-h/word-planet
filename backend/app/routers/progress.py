@@ -6,7 +6,7 @@ from ..database import get_db
 from ..deps import get_current_user, require_tested
 from ..models import Attempt, DailyTask, KnowledgePoint, Progress, Question, Streak, User
 from ..schemas import ProgressResponse, StreakResponse, TodayTaskOut
-from ..services.attempts import local_date_of, local_today
+from ..services.attempts import STRUGGLE_THRESHOLD, local_date_of, local_today
 
 router = APIRouter(prefix="/api", tags=["progress"])
 
@@ -38,23 +38,35 @@ def get_progress(user: User = Depends(get_current_user), db: Session = Depends(g
 
     target_count = 0
     if current_kp is not None:
-        total = db.execute(
-            select(func.count()).select_from(Question).where(
-                Question.knowledge_point_id == current_kp.id
-            )
-        ).scalar_one()
-        answered = db.execute(
-            select(func.count(func.distinct(Attempt.question_id)))
-            .select_from(Attempt)
+        qids_stmt = select(Question.id).where(Question.knowledge_point_id == current_kp.id)
+        total = db.execute(select(func.count()).select_from(Question).where(
+            Question.knowledge_point_id == current_kp.id
+        )).scalar_one()
+
+        # 已“完成”的题 = 答对过 或 累计答错达阈值（与 6.3 完成判定一致）
+        correct_ids = set(
+            db.execute(
+                select(Attempt.question_id)
+                .where(
+                    Attempt.user_id == user.id,
+                    Attempt.is_correct.is_(True),
+                    Attempt.question_id.in_(qids_stmt),
+                )
+                .distinct()
+            ).scalars()
+        )
+        failed_rows = db.execute(
+            select(Attempt.question_id, func.count().label("cnt"))
             .where(
                 Attempt.user_id == user.id,
-                Attempt.is_correct.is_(True),
-                Attempt.question_id.in_(
-                    select(Question.id).where(Question.knowledge_point_id == current_kp.id)
-                ),
+                Attempt.is_correct.is_(False),
+                Attempt.question_id.in_(qids_stmt),
             )
-        ).scalar_one()
-        target_count = max(total - answered, 0)
+            .group_by(Attempt.question_id)
+        ).all()
+        struggled = {r.question_id for r in failed_rows if r.cnt >= STRUGGLE_THRESHOLD}
+
+        target_count = max(total - len(correct_ids | struggled), 0)
 
     return ProgressResponse(
         level=user.level,

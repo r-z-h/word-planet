@@ -6,8 +6,8 @@
         <el-button text @click="$router.push('/home')">返回</el-button>
       </div>
       <el-radio-group v-model="scope" style="margin-top: 12px" @change="load">
+        <el-radio-button value="all">全部（{{ items.length }}）</el-radio-button>
         <el-radio-button value="current">当前知识点</el-radio-button>
-        <el-radio-button value="all">全部</el-radio-button>
       </el-radio-group>
     </div>
 
@@ -23,7 +23,7 @@ import { ElMessage } from 'element-plus'
 import http, { apiError } from '../api/http'
 import WrongList from '../components/WrongList.vue'
 
-const scope = ref('current')
+const scope = ref('all')
 const items = ref([])
 
 onMounted(load)
