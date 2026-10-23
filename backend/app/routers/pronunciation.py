@@ -35,33 +35,40 @@ def _require_pronunciation_kp(db: Session, user: User) -> KnowledgePoint:
 
 
 @router.get("/next", response_model=PronunciationNextResponse)
-def next_pronunciation(user: User = Depends(require_tested), db: Session = Depends(get_db)):
+def next_pronunciation(
+    exclude_id: str | None = None,
+    user: User = Depends(require_tested),
+    db: Session = Depends(get_db),
+):
     kp = _require_pronunciation_kp(db, user)
+
+    excluded = None
+    if exclude_id:
+        try:
+            excluded = uuid.UUID(exclude_id)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="exclude_id 非法")
 
     answered = select(Attempt.question_id).where(
         Attempt.user_id == user.id, Attempt.is_correct.is_(True)
     )
-    question = db.execute(
-        select(Question)
-        .where(
-            Question.knowledge_point_id == kp.id,
-            Question.question_type == "pronunciation",
-            Question.id.notin_(answered),
-        )
-        .order_by(Question.stem)
-        .limit(1)
-    ).scalar_one_or_none()
+    stmt = select(Question).where(
+        Question.knowledge_point_id == kp.id,
+        Question.question_type == "pronunciation",
+        Question.id.notin_(answered),
+    )
+    if excluded is not None:
+        stmt = stmt.where(Question.id != excluded)
+    question = db.execute(stmt.order_by(Question.stem).limit(1)).scalar_one_or_none()
 
     if question is None:
-        question = db.execute(
-            select(Question)
-            .where(
-                Question.knowledge_point_id == kp.id,
-                Question.question_type == "pronunciation",
-            )
-            .order_by(Question.stem)
-            .limit(1)
-        ).scalar_one_or_none()
+        stmt2 = select(Question).where(
+            Question.knowledge_point_id == kp.id,
+            Question.question_type == "pronunciation",
+        )
+        if excluded is not None:
+            stmt2 = stmt2.where(Question.id != excluded)
+        question = db.execute(stmt2.order_by(Question.stem).limit(1)).scalar_one_or_none()
 
     if question is None:
         raise HTTPException(

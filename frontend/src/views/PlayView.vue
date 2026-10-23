@@ -37,7 +37,7 @@
       <el-skeleton :rows="5" animated />
     </div>
 
-    <div v-if="!pronMode && question" class="nav-row">
+    <div v-if="question" class="nav-row">
       <el-button :disabled="!history.length || submitting" @click="goPrev">← 上一题</el-button>
       <span class="muted small">跳过不会记录作答</span>
       <el-button :disabled="submitting" @click="skipNext">下一题 →</el-button>
@@ -98,7 +98,6 @@ async function next(excludeId = '') {
     ElMessage.error(apiError(e))
   }
 }
-
 function skipNext() {
   if (!question.value) return
   const current = question.value
