@@ -1,0 +1,39 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# --- Node ---
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+pnpm-debug.log*
+
+# --- 环境与密钥 ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+certs/
+
+# --- 数据库与临时文件 ---
+*.db
+*.sqlite
+*.sqlite3
+*.log
+*.tmp
+*.bak
+*.orig
+Thumbs.db
+.DS_Store
+
+# --- 编辑器 ---
+.vscode/
+.idea/
