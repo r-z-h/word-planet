@@ -37,23 +37,26 @@ def get_progress(user: User = Depends(get_current_user), db: Session = Depends(g
     ).scalar_one()
 
     target_count = 0
+    kp_total = 0
+    kp_done = 0
     if current_kp is not None:
         qids_stmt = select(Question.id).where(Question.knowledge_point_id == current_kp.id)
-        total = db.execute(
+        kp_total = db.execute(
             select(func.count()).select_from(Question).where(
                 Question.knowledge_point_id == current_kp.id
             )
         ).scalar_one()
 
-        # 做过的题（对错都算），与 6.3 的完成判定一致
-        attempted = db.execute(
+        # 做过的题（对错都算，练习不算），与 6.3 的完成判定一致
+        kp_done = db.execute(
             select(func.count(func.distinct(Attempt.question_id))).where(
                 Attempt.user_id == user.id,
                 Attempt.question_id.in_(qids_stmt),
+                Attempt.question_type != "practice",
             )
         ).scalar_one()
 
-        target_count = max(total - attempted, 0)
+        target_count = max(kp_total - kp_done, 0)
 
     return ProgressResponse(
         level=user.level,
@@ -73,6 +76,8 @@ def get_progress(user: User = Depends(get_current_user), db: Session = Depends(g
             correct_count=correct_count,
             target_count=target_count,
         ),
+        kp_total=kp_total,
+        kp_done=kp_done,
     )
 
 

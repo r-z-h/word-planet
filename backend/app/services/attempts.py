@@ -68,6 +68,7 @@ def is_kp_complete(db: Session, user_id: uuid.UUID, kp_id: uuid.UUID) -> bool:
         select(func.count(func.distinct(Attempt.question_id))).where(
             Attempt.user_id == user_id,
             Attempt.question_id.in_(qids),
+            Attempt.question_type != "practice",  # 错题本练习不算进学习进度
         )
     ).scalar_one()
     return attempted >= len(qids)

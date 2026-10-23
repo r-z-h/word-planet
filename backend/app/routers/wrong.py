@@ -1,8 +1,10 @@
 from typing import Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+import uuid
 
 from ..database import get_db
 from ..deps import require_tested
@@ -17,6 +19,7 @@ router = APIRouter(prefix="/api", tags=["wrong-questions"])
 def list_wrong_questions(
     scope: Literal["current", "all"] = "current",
     include_mastered: bool = False,
+    knowledge_point_id: str | None = None,
     user: User = Depends(require_tested),
     db: Session = Depends(get_db),
 ):
@@ -30,7 +33,12 @@ def list_wrong_questions(
         .where(WrongQuestion.user_id == user.id)
     )
 
-    if scope == "current" and current_kp_id is not None:
+    if knowledge_point_id:
+        try:
+            stmt = stmt.where(Question.knowledge_point_id == uuid.UUID(knowledge_point_id))
+        except ValueError:
+            raise HTTPException(status_code=422, detail="knowledge_point_id 非法")
+    elif scope == "current" and current_kp_id is not None:
         stmt = stmt.where(Question.knowledge_point_id == current_kp_id)
 
     if not include_mastered:
@@ -52,6 +60,7 @@ def list_wrong_questions(
             knowledge_point_name=kp.name,
             error_count=wrong.error_count,
             is_mastered=wrong.consecutive_correct >= MASTERY_STREAK,
+            explanation=question.explanation,
         )
         for wrong, question, kp in rows
     ]

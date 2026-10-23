@@ -1,21 +1,29 @@
 <template>
   <div class="page">
-    <div class="card" style="display: flex; justify-content: space-between; align-items: center">
-      <div>
-        <div style="font-weight: 700">{{ kp?.name || '加载中' }}</div>
-        <div class="muted">{{ kp?.level }} · 还剩 {{ remaining }} 题</div>
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <div>
+          <div style="font-weight: 700">{{ kp?.name || '加载中' }}</div>
+          <div class="muted">
+            {{ kp?.level }} ·
+            <template v-if="progress.kpTotal">
+              第 {{ Math.min(progress.kpDone + 1, progress.kpTotal) }} / {{ progress.kpTotal }} 题
+            </template>
+            <template v-else>还剩 {{ remaining }} 题</template>
+          </div>
+        </div>
+        <el-button text @click="goBack">返回</el-button>
       </div>
-      <el-button text @click="goBack">返回</el-button>
+
+      <el-progress
+        :percentage="percent"
+        :show-text="false"
+        :stroke-width="8"
+        style="margin-top: 12px"
+      />
     </div>
 
-    <div v-if="celebrating" class="card" style="text-align: center">
-      <div style="font-size: 48px">🎉</div>
-      <h2 class="title">这个知识点学完啦！</h2>
-      <p class="muted">已经解锁下一个知识点，明天继续加油。</p>
-      <el-button type="primary" size="large" @click="leaveToHome">回首页</el-button>
-    </div>
-
-    <div v-else-if="question" class="card">
+    <div v-if="question" class="card">
       <component
         :is="renderer"
         :key="question.id"
@@ -46,10 +54,14 @@ const progress = useProgressStore()
 const kp = ref(null)
 const question = ref(null)
 const submitting = ref(false)
-const celebrating = ref(false)
 const pronMode = ref(false)
+const leavingByResult = ref(false)
 
 const remaining = computed(() => progress.todayTask?.target_count ?? 0)
+const percent = computed(() => {
+  if (!progress.kpTotal) return 0
+  return Math.min(100, Math.round((progress.kpDone / progress.kpTotal) * 100))
+})
 const renderer = computed(() => (pronMode.value ? PronunciationGame : QuestionRenderer))
 
 onMounted(load)
@@ -87,6 +99,8 @@ function newKey() {
 async function onSubmit(payload) {
   if (submitting.value || !question.value) return
   submitting.value = true
+  const finishedName = kp.value?.name || ''
+
   try {
     let advanced = false
 
@@ -102,24 +116,18 @@ async function onSubmit(payload) {
     } else {
       const data = await progress.submitAnswer(question.value.id, payload, newKey())
       advanced = data.progress_advanced
-      if (data.is_correct) {
-        ElMessage.success('答对了')
-      } else {
-        // 按需求：答错不显示正确答案，直接进下一题
-        ElMessage.error('答错了，已放进错题本')
-      }
+      if (data.is_correct) ElMessage.success('答对了')
+      else ElMessage.error('答错了，已放进错题本')
     }
 
     await progress.fetchProgress()
 
     if (advanced) {
-      kp.value = progress.currentKnowledgePoint
-      celebrating.value = true
-      question.value = null
+      leavingByResult.value = true
+      router.replace({ path: '/result', query: { finished: finishedName } })
       return
     }
 
-    // 稍微停一下让提示看得见，然后自动下一题
     setTimeout(() => {
       submitting.value = false
       next()
@@ -134,14 +142,9 @@ function goBack() {
   router.push('/home')
 }
 
-function leaveToHome() {
-  celebrating.value = true // 跳过离开确认
-  router.replace('/home')
-}
-
-// 有题没做完就离开时要提示；确认后进度已经存在服务端，下次进来会恢复到这一题
+// 有题没做完就离开时要提示；进度与当前题都在服务端，下次进来会恢复到这一题
 onBeforeRouteLeave(async () => {
-  if (celebrating.value || !question.value) return true
+  if (leavingByResult.value || !question.value) return true
   try {
     await ElMessageBox.confirm(
       '这道题还没做完。确定要返回吗？学习记录会保存，下次点“继续学习”会回到这道题。',

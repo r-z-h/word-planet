@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routers import achievement, auth, progress, pronunciation, push, question, report, test, wrong
+from .routers import achievement, auth, practice, progress, pronunciation, push, question, report, test, wrong
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("word_planet")
@@ -61,6 +61,7 @@ for router in (
     report.router,
     pronunciation.router,
     push.router,
+    practice.router,
 ):
     app.include_router(router)
 

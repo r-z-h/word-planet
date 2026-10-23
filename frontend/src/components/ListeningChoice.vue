@@ -7,20 +7,22 @@
       <p class="muted" style="margin-top: 8px">点一下听句子，再选出你听到的那个词</p>
     </div>
 
-    <el-button
-      v-for="key in keys"
-      :key="key"
-      class="big-option"
-      :disabled="disabled"
-      @click="$emit('submit', key)"
-    >
-      <b style="margin-right: 10px">{{ key }}</b>{{ question.options?.[key] }}
-    </el-button>
+    <div v-for="key in keys" :key="key" class="opt-row">
+      <el-button
+        class="big-option"
+        :disabled="disabled"
+        @click="$emit('submit', key)"
+      >
+        <b style="margin-right: 10px">{{ key }}</b>{{ question.options?.[key] }}
+      </el-button>
+      <SpeakButton :text="String(question.options?.[key] || '')" />
+    </div>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted } from 'vue'
+import SpeakButton from './SpeakButton.vue'
 
 const props = defineProps({
   question: { type: Object, required: true },
@@ -43,3 +45,14 @@ onMounted(() => {
   setTimeout(play, 300)
 })
 </script>
+
+<style scoped>
+.opt-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.opt-row .big-option {
+  flex: 1;
+}
+</style>

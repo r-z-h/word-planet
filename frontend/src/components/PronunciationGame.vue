@@ -105,9 +105,20 @@ async function startRecord() {
     emit('submit', { is_correct: ok, transcript: said })
   }
 
-  recognition.onerror = () => {
+  recognition.onerror = (event) => {
     recording.value = false
-    ElMessage.warning('没听清，再试一次')
+    const code = event?.error || 'unknown'
+    const messages = {
+      network: '语音识别要联网访问 Google 的服务，当前网络连不上（这是 Chrome 的限制，不是麦克风问题）',
+      'not-allowed': '麦克风权限被拒绝，请在浏览器地址栏左侧允许麦克风',
+      'service-not-allowed': '浏览器禁止了语音识别服务',
+      'audio-capture': '没有检测到麦克风设备',
+      'no-speech': '没听到声音，再大声读一次',
+      aborted: '识别被中断',
+      'language-not-supported': '浏览器不支持 en-US 识别'
+    }
+    ElMessage.error(messages[code] || `识别失败：${code}`)
+    console.warn('[SpeechRecognition] error =', code)
   }
 
   recognition.onend = () => {

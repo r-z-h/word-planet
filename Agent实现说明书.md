@@ -394,6 +394,34 @@ CREATE TABLE push_subscriptions (
 - 响应：`{ "ok": true }`
 - 规则：无请求体，删除当前登录用户的**全部**推送订阅。
 
+### 4.10 错题本练习（v1.6 新增，P1）
+
+> 错题从主流程移出后，必须有一个专门的地方去练，否则"收集"没有意义。
+
+**GET /api/practice/next**
+
+- 查询参数：`?knowledge_point_id=<uuid>`（可选，按知识点筛选）
+- 响应：`{ "question": { "id", "question_type", "stem", "options", "explanation", "error_count", "consecutive_correct", "knowledge_point_name" }, "remaining": int }`
+- 规则：
+  - 只出 `wrong_questions.consecutive_correct < 2` 的题，按 `error_count DESC`。
+  - **排除 `pronunciation` 题**：本地识别未落地前，练习里无法判分（见 4.8 已知问题）。
+  - 没有可练的题时返回 `409`，`code = "NO_WRONG_QUESTIONS"`。
+
+**POST /api/practice/result**
+
+- 请求：`{ "question_id": str, "answer": str, "idempotency_key": str }`
+- 响应：`{ "is_correct", "correct_answer", "explanation", "consecutive_correct", "mastered", "duplicated" }`
+- 规则：
+  - 判题复用 4.3 的归一化规则。
+  - 写 `attempts`，`question_type = 'practice'`。
+  - 更新 `wrong_questions`：答对 `consecutive_correct += 1`，答错清零；达 2 视为掌握。
+  - **不影响** `progress`、`current_knowledge_point_id`、`daily_tasks.is_completed`；`is_kp_complete` 统计时排除 `practice`。
+  - 计入连续学习（当天首次答对）与徽章。
+
+**GET /api/practice/summary**
+
+- 响应：`{ "pending": int, "mastered": int, "by_knowledge_point": [ { "knowledge_point_id", "knowledge_point_name", "level", "pending", "mastered", "is_current" } ] }`
+
 ---
 
 ## 5. 前端页面与组件
@@ -786,3 +814,23 @@ CREATE TABLE push_subscriptions (
 | V5-4 | 4.4 | `target_count` 改为"还没做过的题数" |
 | V5-5 | 验收 | 新增 36–40 |
 | V5-6 | 全篇 | 删除 v1.4 的"答错 5 次视为已练习"规则 |
+
+### 12.5 v1.6（P1：学习闭环）
+
+| # | 位置 | 变更 |
+|---|---|---|
+| P1-1 | 4.10（新增） | 错题本练习三个接口：出题 / 判题 / 汇总 |
+| P1-2 | 3 | `questions` 增加 `explanation`，105 题全部补写解析 |
+| P1-3 | 4.4 | `/progress` 增加 `kp_total`、`kp_done`，供进度条与题号使用 |
+| P1-4 | 4.5 | 错题列表返回 `explanation`；支持 `knowledge_point_id` 筛选 |
+| P1-5 | 5.1 | 新增路由 `/practice`、`/result` |
+| P1-6 | 5.2 | 新增 `SpeakButton.vue`：所有英文选项可点读；选择题渲染带发音按钮 |
+| P1-7 | 6.3 | `is_kp_complete` 排除 `question_type='practice'`，练习不推进学习进度 |
+| P1-8 | 9 | 新增验收 41–44（见下） |
+
+**v1.6 验收：**
+
+41. 错题本显示"待练习 / 已掌握"数量，可按知识点筛选。
+42. 练习页答错展示解析；同一题连续答对 2 次后从默认列表移出。
+43. 练习不改变 `current_knowledge_point_id`、不推进知识点、不影响每日任务完成态。
+44. 答题页显示"第 X / Y 题"与进度条；知识点完成后跳转结算页。

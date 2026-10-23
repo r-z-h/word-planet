@@ -15,7 +15,7 @@ from .attempts import (
 )
 
 
-def _update_wrong_book(
+def update_wrong_book(
     db: Session, user_id: uuid.UUID, question_id: uuid.UUID, is_correct: bool
 ) -> None:
     record = db.query(WrongQuestion).filter(
@@ -65,7 +65,7 @@ def apply_attempt(
     )
     db.flush()
 
-    _update_wrong_book(db, user.id, question.id, is_correct)
+    update_wrong_book(db, user.id, question.id, is_correct)
     get_or_create_daily_task(db, user.id, local_today(db))
 
     progress = get_progress(db, user.id)

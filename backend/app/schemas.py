@@ -107,6 +107,8 @@ class ProgressResponse(BaseModel):
     current_knowledge_point: KnowledgePointOut | None
     completed_knowledge_points: list[str]
     today_task: TodayTaskOut
+    kp_total: int = 0
+    kp_done: int = 0
 
 
 class StreakResponse(BaseModel):
@@ -121,6 +123,7 @@ class WrongItem(BaseModel):
     knowledge_point_name: str
     error_count: int
     is_mastered: bool
+    explanation: str | None = None
 
 
 class WrongListResponse(BaseModel):
@@ -187,3 +190,37 @@ class PushSubscribeRequest(BaseModel):
 
 class OkResponse(BaseModel):
     ok: bool = True
+
+
+# ---------------- 错题本练习 ----------------
+
+
+class PracticeQuestionOut(BaseModel):
+    id: str
+    question_type: str
+    stem: str
+    options: dict | None = None
+    explanation: str | None = None
+    error_count: int = 1
+    consecutive_correct: int = 0
+    knowledge_point_name: str = ""
+
+
+class PracticeNextResponse(BaseModel):
+    question: PracticeQuestionOut
+    remaining: int = 0
+
+
+class PracticeResultRequest(BaseModel):
+    question_id: str
+    answer: str
+    idempotency_key: str = Field(min_length=8, max_length=64)
+
+
+class PracticeResultResponse(BaseModel):
+    is_correct: bool
+    correct_answer: str
+    explanation: str | None = None
+    consecutive_correct: int = 0
+    mastered: bool = False
+    duplicated: bool = False

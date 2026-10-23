@@ -6,7 +6,9 @@ export const useProgressStore = defineStore('progress', {
     level: null,
     currentKnowledgePoint: null,
     completedKnowledgePoints: [],
-    todayTask: { is_completed: false, correct_count: 0, target_count: 0 }
+    todayTask: { is_completed: false, correct_count: 0, target_count: 0 },
+    kpTotal: 0,
+    kpDone: 0
   }),
   actions: {
     async fetchProgress() {
@@ -15,6 +17,8 @@ export const useProgressStore = defineStore('progress', {
       this.currentKnowledgePoint = data.current_knowledge_point
       this.completedKnowledgePoints = data.completed_knowledge_points || []
       this.todayTask = data.today_task
+      this.kpTotal = data.kp_total || 0
+      this.kpDone = data.kp_done || 0
       return data
     },
     async submitAnswer(questionId, answer, idempotencyKey) {
