@@ -41,16 +41,30 @@ def _current_kp(db: Session, user: User) -> KnowledgePoint:
     return kp
 
 
-def _base_pool(kp_id: uuid.UUID):
-    return select(Question).where(
+def _base_pool(kp_id: uuid.UUID, exclude_id: uuid.UUID | None = None):
+    stmt = select(Question).where(
         Question.knowledge_point_id == kp_id,
         Question.question_type != "pronunciation",
     )
+    if exclude_id is not None:
+        stmt = stmt.where(Question.id != exclude_id)
+    return stmt
 
 
 @router.get("/question/next", response_model=QuestionNextResponse)
-def next_question(user: User = Depends(require_tested), db: Session = Depends(get_db)):
+def next_question(
+    exclude_id: str | None = None,
+    user: User = Depends(require_tested),
+    db: Session = Depends(get_db),
+):
     kp = _current_kp(db, user)
+
+    excluded = None
+    if exclude_id:
+        try:
+            excluded = uuid.UUID(exclude_id)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="exclude_id 非法")
 
     if kp.question_type == "pronunciation":
         raise HTTPException(
@@ -83,13 +97,14 @@ def next_question(user: User = Depends(require_tested), db: Session = Depends(ge
             pending is not None
             and pending.knowledge_point_id == kp.id
             and pending.question_type != "pronunciation"
+            and pending.id != excluded
         ):
             question = pending
 
     # 2) 当前知识点没做过的题（优先跳过水平测试里已经出过的）
     if question is None:
         seen_in_test = {uuid.UUID(x) for x in (progress.test_seen_question_ids or [])}
-        stmt = _base_pool(kp.id).where(Question.id.notin_(answered))
+        stmt = _base_pool(kp.id, excluded).where(Question.id.notin_(answered))
         if seen_in_test:
             stmt = stmt.where(Question.id.notin_(seen_in_test))
         question = db.execute(stmt.order_by(func.random()).limit(1)).scalar_one_or_none()
@@ -98,7 +113,7 @@ def next_question(user: User = Depends(require_tested), db: Session = Depends(ge
     #    否则该知识点会因为凑不满题目数而永远无法完成
     if question is None:
         question = db.execute(
-            _base_pool(kp.id)
+            _base_pool(kp.id, excluded)
             .where(Question.id.notin_(answered))
             .order_by(func.random())
             .limit(1)
@@ -106,7 +121,9 @@ def next_question(user: User = Depends(require_tested), db: Session = Depends(ge
 
     # 4) 兜底：本知识点全部做过时允许重复（正常不会走到，做完就会推进）
     if question is None:
-        question = db.execute(_base_pool(kp.id).order_by(func.random()).limit(1)).scalar_one_or_none()
+        question = db.execute(
+            _base_pool(kp.id, excluded).order_by(func.random()).limit(1)
+        ).scalar_one_or_none()
 
     if question is None:
         raise HTTPException(

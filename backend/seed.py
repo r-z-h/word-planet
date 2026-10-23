@@ -8,7 +8,7 @@
 from sqlalchemy import select
 
 from app.database import SessionLocal
-from app.models import Badge, KnowledgePoint, Question
+from app.models import Attempt, Badge, KnowledgePoint, Question
 
 # ---------------------------------------------------------------- 知识点定义
 
@@ -50,7 +50,7 @@ COMMON_WORDS = [
     ("学生", "student"),
     ("书", "book"),
     ("铅笔", "pencil"),
-    ("书包", "bag"),
+    ("书包", "schoolbag"),
     ("尺子", "ruler"),
     ("橡皮", "eraser"),
     ("猫", "cat"),
@@ -100,17 +100,17 @@ PRONUNCIATION = [
 
 # (英文句子, 正确词, 干扰项, 中文意思)
 LISTENING = [
-    ("My favourite fruit is banana.", "banana", ["apple", "orange", "grape"], "我最喜欢的水果是香蕉。"),
+    ("My favourite fruit is an apple.", "apple", ["banana", "orange", "grape"], "我最喜欢的水果是苹果。"),
     ("I go to school by bus every day.", "school", ["park", "zoo", "library"], "我每天坐公交车去学校。"),
     ("My mother is a teacher.", "teacher", ["doctor", "driver", "farmer"], "我妈妈是一名老师。"),
     ("There is a cat under the table.", "cat", ["dog", "bird", "fish"], "桌子下面有一只猫。"),
     ("I would like a glass of milk.", "milk", ["juice", "water", "tea"], "我想要一杯牛奶。"),
-    ("We have English class on Monday.", "English", ["math", "music", "art"], "我们星期一有英语课。"),
+    ("We have an English class on Monday.", "English", ["math", "music", "art"], "我们星期一有英语课。"),
     ("It is raining outside today.", "raining", ["snowing", "sunny", "windy"], "今天外面在下雨。"),
     ("My father works in a hospital.", "hospital", ["school", "bank", "factory"], "我爸爸在医院工作。"),
     ("She likes playing the piano.", "piano", ["guitar", "violin", "drum"], "她喜欢弹钢琴。"),
     ("The train leaves at eight o'clock.", "train", ["bus", "plane", "ship"], "火车八点出发。"),
-    ("I have two brothers and one sister.", "sister", ["brother", "cousin", "uncle"], "我有两个兄弟和一个姐妹。"),
+    ("I have two brothers and one sister.", "sister", ["aunt", "cousin", "uncle"], "我有两个兄弟和一个姐妹。"),
     ("We are going to the park this weekend.", "park", ["museum", "cinema", "market"], "这个周末我们要去公园。"),
     ("He is reading a book in the library.", "library", ["classroom", "office", "garden"], "他正在图书馆看书。"),
     ("Please open the window, it is hot.", "window", ["door", "box", "bag"], "请打开窗户，天气很热。"),
@@ -200,7 +200,7 @@ def build_listening_items():
     for idx, (sentence, correct, distractors, cn) in enumerate(LISTENING):
         stem, opts, ans = make_choice(sentence, correct, distractors, idx)
         explanation = (
-            f"你听到的句子是：{sentence} 意思是「{cn}」"
+            f"你听到的句子是「{sentence}」，意思是「{cn}」。"
             f"句子里出现的词是 {correct}。"
         )
         items.append((stem, opts, ans, explanation))
@@ -269,8 +269,35 @@ def ensure_question(db, kp, qtype, stem, options, answer, difficulty, explanatio
                 explanation=explanation,
             )
         )
-    elif not existing.explanation:
+        return
+
+    # 已存在：以 seed 为准同步内容，避免改了种子但库里还是旧数据
+    if existing.options != options:
+        existing.options = options
+    if existing.answer != answer:
+        existing.answer = answer
+    if existing.difficulty != difficulty:
+        existing.difficulty = difficulty
+    if existing.explanation != explanation:
         existing.explanation = explanation
+
+
+def prune_stale(db, kp, expected_stems) -> None:
+    """删掉该知识点下已经不在种子里的题（没有作答记录时）。"""
+    stale = db.execute(
+        select(Question).where(
+            Question.knowledge_point_id == kp.id, Question.stem.notin_(expected_stems)
+        )
+    ).scalars().all()
+    for q in stale:
+        used = db.execute(
+            select(Attempt.id).where(Attempt.question_id == q.id).limit(1)
+        ).first()
+        if used:
+            print(f"  跳过删除（已有作答记录）：{q.stem[:40]}")
+            continue
+        db.delete(q)
+        print(f"  已删除旧题：{q.stem[:40]}")
 
 
 def seed() -> None:
@@ -288,6 +315,7 @@ def seed() -> None:
                 ensure_question(
                     db, kp, qtype, stem, opts, ans, DIFFICULTY[kp.level], explanation
                 )
+            prune_stale(db, kp, [item[0] for item in items])
 
         add_all(kps[("L1", 1)], "letter", build_letter_items())
         add_all(kps[("L1", 2)], "word", build_word_items(GREETINGS))

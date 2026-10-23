@@ -5,7 +5,7 @@
     text
     class="speak-btn"
     :title="`朗读：${text}`"
-    @click.stop="speak"
+    @click.stop="speakNow"
   >
     <span :style="{ fontSize: fontSize }">🔊</span>
   </el-button>
@@ -13,6 +13,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { speak } from '../utils/speech'
 
 const props = defineProps({
   text: { type: String, required: true },
@@ -24,13 +25,8 @@ const props = defineProps({
 
 const fontSize = computed(() => (props.size === 'large' ? '22px' : '16px'))
 
-function speak() {
-  if (!('speechSynthesis' in window)) return
-  window.speechSynthesis.cancel()
-  const utterance = new SpeechSynthesisUtterance(props.text)
-  utterance.lang = props.lang
-  utterance.rate = props.rate
-  window.speechSynthesis.speak(utterance)
+function speakNow() {
+  speak(props.text, { lang: props.lang, rate: props.rate })
 }
 </script>
 

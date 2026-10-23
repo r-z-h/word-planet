@@ -23,6 +23,7 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import SpeakButton from './SpeakButton.vue'
+import { speak } from '../utils/speech'
 
 const props = defineProps({
   question: { type: Object, required: true },
@@ -33,12 +34,7 @@ defineEmits(['submit'])
 const keys = computed(() => Object.keys(props.question.options || {}).sort())
 
 function play() {
-  if (!('speechSynthesis' in window)) return
-  window.speechSynthesis.cancel()
-  const utter = new SpeechSynthesisUtterance(props.question.stem)
-  utter.lang = 'en-US'
-  utter.rate = 0.9
-  window.speechSynthesis.speak(utter)
+  speak(props.question.stem, { rate: 0.9 })
 }
 
 onMounted(() => {

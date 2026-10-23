@@ -39,6 +39,7 @@
 <script setup>
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { speak as speakText } from '../utils/speech'
 
 const props = defineProps({
   question: { type: Object, required: true },
@@ -54,12 +55,7 @@ const transcript = ref('')
 let recognition = null
 
 function speak() {
-  if (!('speechSynthesis' in window)) return
-  window.speechSynthesis.cancel()
-  const utter = new SpeechSynthesisUtterance(props.question.stem)
-  utter.lang = 'en-US'
-  utter.rate = 0.85
-  window.speechSynthesis.speak(utter)
+  speakText(props.question.stem, { rate: 0.85 })
 }
 
 function distance(a, b) {

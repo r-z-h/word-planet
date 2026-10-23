@@ -36,6 +36,12 @@
     <div v-else class="card">
       <el-skeleton :rows="5" animated />
     </div>
+
+    <div v-if="!pronMode && question" class="nav-row">
+      <el-button :disabled="!history.length || submitting" @click="goPrev">← 上一题</el-button>
+      <span class="muted small">跳过不会记录作答</span>
+      <el-button :disabled="submitting" @click="skipNext">下一题 →</el-button>
+    </div>
   </div>
 </template>
 
@@ -56,6 +62,7 @@ const question = ref(null)
 const submitting = ref(false)
 const pronMode = ref(false)
 const leavingByResult = ref(false)
+const history = ref([])
 
 const remaining = computed(() => progress.todayTask?.target_count ?? 0)
 const percent = computed(() => {
@@ -81,14 +88,31 @@ async function load() {
   }
 }
 
-async function next() {
+async function next(excludeId = '') {
   try {
     const url = pronMode.value ? '/pronunciation/next' : '/question/next'
-    const { data } = await http.get(url)
+    const params = excludeId ? { exclude_id: excludeId } : {}
+    const { data } = await http.get(url, { params })
     question.value = data.question
   } catch (e) {
     ElMessage.error(apiError(e))
   }
+}
+
+function skipNext() {
+  if (!question.value) return
+  const current = question.value
+  history.value.push(current)
+  next(current.id)
+}
+
+function goPrev() {
+  if (!history.value.length) return
+  question.value = history.value.pop()
+}
+
+function forgetInHistory(questionId) {
+  history.value = history.value.filter((q) => q.id !== questionId)
 }
 
 function newKey() {
@@ -100,6 +124,7 @@ async function onSubmit(payload) {
   if (submitting.value || !question.value) return
   submitting.value = true
   const finishedName = kp.value?.name || ''
+  const answeredId = question.value.id
 
   try {
     let advanced = false
@@ -121,6 +146,7 @@ async function onSubmit(payload) {
     }
 
     await progress.fetchProgress()
+    forgetInHistory(answeredId)
 
     if (advanced) {
       leavingByResult.value = true
@@ -157,3 +183,16 @@ onBeforeRouteLeave(async () => {
   }
 })
 </script>
+
+<style scoped>
+.nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 4px 8px;
+}
+.nav-row .small {
+  font-size: 12px;
+}
+</style>
