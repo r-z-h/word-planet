@@ -9,11 +9,21 @@
 
 ## 快速开始：一键启停
 
+**双击这三个文件就行**（Windows 上 `.ps1` 没有文件关联，双击 `.ps1` 不会执行）：
+
+| 文件 | 作用 |
+|---|---|
+| `start.bat` | 启动 PostgreSQL + 后端 + 前端 |
+| `stop.bat` | 全部关闭 |
+| `status.bat` | 查看状态（端口、健康检查、局域网 IP） |
+
+命令行等价写法：
+
 ```powershell
-.\dev.ps1 start      # 启动 PostgreSQL + 后端 + 前端
-.\dev.ps1 stop       # 全部关闭
-.\dev.ps1 restart    # 重启
-.\dev.ps1 status     # 看状态
+.\dev.ps1 start
+.\dev.ps1 stop
+.\dev.ps1 restart
+.\dev.ps1 status
 ```
 
 脚本会：检查端口占用、清理上次强杀留下的 `postmaster.pid`、等待服务真正就绪、把日志写到 `.logs\`。
@@ -22,12 +32,6 @@
 
 - **只关自己的进程**：如果端口被别的项目占着（比如 `D:\web开发\rzhvuedemo` 的 vite 占了 5173），脚本只提示、**不会杀它**。
 - 端口被占用时显示 `FOREIGN`，不会假装启动成功。
-
-如果 PowerShell 提示脚本未签名：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\dev.ps1 start
-```
 
 ---
 
