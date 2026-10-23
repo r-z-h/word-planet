@@ -66,6 +66,7 @@ class Question(Base):
     options: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     answer: Mapped[str] = mapped_column(Text, nullable=False)
     explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    set_no: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     difficulty: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     is_quiz: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 

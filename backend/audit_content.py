@@ -90,21 +90,28 @@ def main() -> None:
             if q.question_type == "spelling":
                 if q.options:
                     add(q, "拼写题不应有选项")
-                if not re.fullmatch(r"[a-z]+", str(q.answer)):
-                    add(q, f"答案不是纯小写英文：{q.answer}")
+                # 判题时大小写不敏感，专有名词（Alaska）允许首字母大写
+                if not re.fullmatch(r"[A-Za-z]+", str(q.answer)):
+                    add(q, f"答案不是纯英文字母：{q.answer}")
 
             if q.question_type == "pronunciation":
-                if not re.fullmatch(r"[a-z]+", str(q.answer)):
+                if not re.fullmatch(r"[A-Za-z]+", str(q.answer)):
                     add(q, f"跟读答案异常：{q.answer}")
 
-        # 题量与题型一致性
+        # 题量与题型一致性：按「套」检查，每套必须 15 题
         for kp_id, kp in kps.items():
             qs = [x for x in rows if x.knowledge_point_id == kp_id]
             types = {x.question_type for x in qs}
-            if len(qs) != 15:
-                problems.append(f"知识点「{kp.name}」只有 {len(qs)} 题（应为 15）")
             if types != {kp.question_type}:
                 problems.append(f"知识点「{kp.name}」题型不一致：{types}")
+            per_set: dict[int, int] = {}
+            for q in qs:
+                per_set[q.set_no] = per_set.get(q.set_no, 0) + 1
+            for set_no, count in sorted(per_set.items()):
+                if count != 15:
+                    problems.append(
+                        f"「{kp.name}」第 {set_no} 套只有 {count} 题（应为 15）"
+                    )
 
     if problems:
         print(f"\n发现 {len(problems)} 个问题：")

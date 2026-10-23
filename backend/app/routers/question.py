@@ -41,13 +41,29 @@ def _current_kp(db: Session, user: User) -> KnowledgePoint:
     return kp
 
 
-def _base_pool(kp_id: uuid.UUID, exclude_id: uuid.UUID | None = None):
+def _parse_exclude(value: str | None) -> list[uuid.UUID]:
+    """exclude_id 支持逗号分隔多个：本次会话里已经跳过的题都不再出。"""
+    if not value:
+        return []
+    result: list[uuid.UUID] = []
+    for part in value.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            result.append(uuid.UUID(part))
+        except ValueError:
+            raise HTTPException(status_code=422, detail="exclude_id 非法")
+    return result
+
+
+def _base_pool(kp_id: uuid.UUID, exclude_ids: list[uuid.UUID] | None = None):
     stmt = select(Question).where(
         Question.knowledge_point_id == kp_id,
         Question.question_type != "pronunciation",
     )
-    if exclude_id is not None:
-        stmt = stmt.where(Question.id != exclude_id)
+    if exclude_ids:
+        stmt = stmt.where(Question.id.notin_(exclude_ids))
     return stmt
 
 
@@ -58,13 +74,7 @@ def next_question(
     db: Session = Depends(get_db),
 ):
     kp = _current_kp(db, user)
-
-    excluded = None
-    if exclude_id:
-        try:
-            excluded = uuid.UUID(exclude_id)
-        except ValueError:
-            raise HTTPException(status_code=422, detail="exclude_id 非法")
+    excluded_ids = _parse_exclude(exclude_id)
 
     if kp.question_type == "pronunciation":
         raise HTTPException(
@@ -97,14 +107,14 @@ def next_question(
             pending is not None
             and pending.knowledge_point_id == kp.id
             and pending.question_type != "pronunciation"
-            and pending.id != excluded
+            and pending.id not in excluded_ids
         ):
             question = pending
 
     # 2) 当前知识点没做过的题（优先跳过水平测试里已经出过的）
     if question is None:
         seen_in_test = {uuid.UUID(x) for x in (progress.test_seen_question_ids or [])}
-        stmt = _base_pool(kp.id, excluded).where(Question.id.notin_(answered))
+        stmt = _base_pool(kp.id, excluded_ids).where(Question.id.notin_(answered))
         if seen_in_test:
             stmt = stmt.where(Question.id.notin_(seen_in_test))
         question = db.execute(stmt.order_by(func.random()).limit(1)).scalar_one_or_none()
@@ -113,7 +123,7 @@ def next_question(
     #    否则该知识点会因为凑不满题目数而永远无法完成
     if question is None:
         question = db.execute(
-            _base_pool(kp.id, excluded)
+            _base_pool(kp.id, excluded_ids)
             .where(Question.id.notin_(answered))
             .order_by(func.random())
             .limit(1)
@@ -122,7 +132,7 @@ def next_question(
     # 4) 兜底：本知识点全部做过时允许重复（正常不会走到，做完就会推进）
     if question is None:
         question = db.execute(
-            _base_pool(kp.id, excluded).order_by(func.random()).limit(1)
+            _base_pool(kp.id).order_by(func.random()).limit(1)
         ).scalar_one_or_none()
 
     if question is None:

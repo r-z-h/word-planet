@@ -91,7 +91,8 @@ async function load() {
 async function next(excludeId = '') {
   try {
     const url = pronMode.value ? '/pronunciation/next' : '/question/next'
-    const params = excludeId ? { exclude_id: excludeId } : {}
+    const excluded = [...history.value.map((q) => q.id), excludeId].filter(Boolean)
+    const params = excluded.length ? { exclude_id: excluded.join(',') } : {}
     const { data } = await http.get(url, { params })
     question.value = data.question
   } catch (e) {

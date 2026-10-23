@@ -41,3 +41,6 @@ Thumbs.db
 # --- 编辑器 ---
 .vscode/
 .idea/
+
+# 由 tools/import_words.py 生成
+data/build/

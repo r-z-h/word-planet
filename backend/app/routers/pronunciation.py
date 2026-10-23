@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -42,33 +42,39 @@ def next_pronunciation(
 ):
     kp = _require_pronunciation_kp(db, user)
 
-    excluded = None
+    excluded_ids: list[uuid.UUID] = []
     if exclude_id:
-        try:
-            excluded = uuid.UUID(exclude_id)
-        except ValueError:
-            raise HTTPException(status_code=422, detail="exclude_id 非法")
+        for part in exclude_id.split(","):
+            part = part.strip()
+            if not part:
+                continue
+            try:
+                excluded_ids.append(uuid.UUID(part))
+            except ValueError:
+                raise HTTPException(status_code=422, detail="exclude_id 非法")
 
-    answered = select(Attempt.question_id).where(
-        Attempt.user_id == user.id, Attempt.is_correct.is_(True)
-    )
+    # 与主流程一致：答过（对错都算）就不再出现，随机抽取避免固定顺序
+    answered = select(Attempt.question_id).where(Attempt.user_id == user.id)
     stmt = select(Question).where(
         Question.knowledge_point_id == kp.id,
         Question.question_type == "pronunciation",
         Question.id.notin_(answered),
     )
-    if excluded is not None:
-        stmt = stmt.where(Question.id != excluded)
-    question = db.execute(stmt.order_by(Question.stem).limit(1)).scalar_one_or_none()
+    if excluded_ids:
+        stmt = stmt.where(Question.id.notin_(excluded_ids))
+    question = db.execute(stmt.order_by(func.random()).limit(1)).scalar_one_or_none()
 
+    # 全部练过一遍时允许重复（正常情况下这时知识点已经完成并推进）
     if question is None:
-        stmt2 = select(Question).where(
-            Question.knowledge_point_id == kp.id,
-            Question.question_type == "pronunciation",
-        )
-        if excluded is not None:
-            stmt2 = stmt2.where(Question.id != excluded)
-        question = db.execute(stmt2.order_by(Question.stem).limit(1)).scalar_one_or_none()
+        question = db.execute(
+            select(Question)
+            .where(
+                Question.knowledge_point_id == kp.id,
+                Question.question_type == "pronunciation",
+            )
+            .order_by(func.random())
+            .limit(1)
+        ).scalar_one_or_none()
 
     if question is None:
         raise HTTPException(
