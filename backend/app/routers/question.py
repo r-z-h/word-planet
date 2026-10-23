@@ -6,10 +6,9 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import require_tested
-from ..models import Attempt, KnowledgePoint, Progress, Question, User, WrongQuestion
+from ..models import Attempt, KnowledgePoint, Progress, Question, User
 from ..schemas import AnswerSubmitRequest, AnswerSubmitResponse, QuestionNextResponse
 from ..services.attempt_flow import apply_attempt
-from ..services.attempts import MASTERY_STREAK
 from ..services.judge import is_correct as judge_correct
 
 router = APIRouter(prefix="/api", tags=["question"])
@@ -74,13 +73,8 @@ def next_question(user: User = Depends(require_tested), db: Session = Depends(ge
     progress = db.get(Progress, user.id)
     question = None
 
-    # 刚刚答过的那道题不要立刻重复出现（否则答错后马上又是同一题）
-    last_answered_id = db.execute(
-        select(Attempt.question_id)
-        .where(Attempt.user_id == user.id)
-        .order_by(Attempt.created_at.desc(), Attempt.id.desc())
-        .limit(1)
-    ).scalar_one_or_none()
+    # 主流程只过一遍：答过的题（无论对错）不再出现，答错的只进错题本
+    answered = select(Attempt.question_id).where(Attempt.user_id == user.id)
 
     # 1) 恢复上次未作答的那道题（中途退出后重新进来要看到同一题）
     if progress is not None and progress.last_question_id is not None:
@@ -92,50 +86,25 @@ def next_question(user: User = Depends(require_tested), db: Session = Depends(ge
         ):
             question = pending
 
-    # 2) 当前知识点未掌握的错题
-    if question is None:
-        stmt = (
-            _base_pool(kp.id)
-            .join(WrongQuestion, WrongQuestion.question_id == Question.id)
-            .where(
-                WrongQuestion.user_id == user.id,
-                WrongQuestion.consecutive_correct < MASTERY_STREAK,
-            )
-        )
-        if last_answered_id is not None:
-            stmt = stmt.where(Question.id != last_answered_id)
-        question = db.execute(
-            stmt.order_by(WrongQuestion.error_count.desc()).limit(1)
-        ).scalar_one_or_none()
-
-    # 3) 当前知识点没做过的题（跳过水平测试里已经出过的）
+    # 2) 当前知识点没做过的题（优先跳过水平测试里已经出过的）
     if question is None:
         seen_in_test = {uuid.UUID(x) for x in (progress.test_seen_question_ids or [])}
-        answered = select(Attempt.question_id).where(Attempt.user_id == user.id)
         stmt = _base_pool(kp.id).where(Question.id.notin_(answered))
         if seen_in_test:
             stmt = stmt.where(Question.id.notin_(seen_in_test))
         question = db.execute(stmt.order_by(func.random()).limit(1)).scalar_one_or_none()
 
-    # 4) 其他知识点的错题
+    # 3) 上面被测试题挤空时，允许出“测试出过但没做过”的题，
+    #    否则该知识点会因为凑不满题目数而永远无法完成
     if question is None:
-        stmt2 = (
-            select(Question)
-            .join(WrongQuestion, WrongQuestion.question_id == Question.id)
-            .where(
-                WrongQuestion.user_id == user.id,
-                WrongQuestion.consecutive_correct < MASTERY_STREAK,
-                Question.knowledge_point_id != kp.id,
-                Question.question_type != "pronunciation",
-            )
-        )
-        if last_answered_id is not None:
-            stmt2 = stmt2.where(Question.id != last_answered_id)
         question = db.execute(
-            stmt2.order_by(WrongQuestion.error_count.desc()).limit(1)
+            _base_pool(kp.id)
+            .where(Question.id.notin_(answered))
+            .order_by(func.random())
+            .limit(1)
         ).scalar_one_or_none()
 
-    # 5) 当前知识点任意题（此时允许重复，包含测试出过的）
+    # 4) 兜底：本知识点全部做过时允许重复（正常不会走到，做完就会推进）
     if question is None:
         question = db.execute(_base_pool(kp.id).order_by(func.random()).limit(1)).scalar_one_or_none()
 

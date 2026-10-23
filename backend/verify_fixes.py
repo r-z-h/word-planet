@@ -65,16 +65,46 @@ def main():
         f"共 {len(book)} 条",
     )
 
+    mid = c.get("/api/progress").json()["today_task"]["target_count"]
+    check("问题3 答错后剩余题数也递减（按做过算）", mid == before - 1, f"{before} -> {mid}")
+
     nxt = c.get("/api/question/next").json()["question"]
     check("问题4 答错后不重复同一题", nxt["id"] != first["id"], f"{nxt['id']} vs {first['id']}")
 
-    # 问题3：答对后“还剩 N 题”实时递减
+    # 问题3 续：答对继续递减
     c.post(
         "/api/answer/submit",
         json={"question_id": nxt["id"], "answer": answer_of(nxt["id"]), "idempotency_key": uuid.uuid4().hex},
     )
     after = c.get("/api/progress").json()["today_task"]["target_count"]
-    check("问题3 答对后剩余题数递减", after == before - 1, f"{before} -> {after}")
+    check("问题3 答对后剩余题数递减", after == before - 2, f"{mid} -> {after}")
+
+    # 新增要求：错题不再回到主流程，且不会因此卡住知识点
+    seen = {first["id"], nxt["id"]}
+    repeated = []
+    advanced = False
+    for _ in range(20):
+        q = c.get("/api/question/next").json()["question"]
+        if q["id"] in seen:
+            repeated.append(q["id"])
+        seen.add(q["id"])
+        res = c.post(
+            "/api/answer/submit",
+            json={
+                "question_id": q["id"],
+                "answer": "###",  # 故意全错
+                "idempotency_key": uuid.uuid4().hex,
+            },
+        ).json()
+        if res["progress_advanced"]:
+            advanced = True
+            break
+
+    check("主流程不重复出题（全答错也不回头）", not repeated, str(repeated[:3]))
+    check("全答错也能学完知识点并推进（不卡死）", advanced)
+    check("学完后已完成知识点 +1", len(c.get("/api/progress").json()["completed_knowledge_points"]) == 1)
+    book2 = c.get("/api/wrong-questions", params={"scope": "all"}).json()["items"]
+    check("错题都进了错题本", len(book2) >= 2, f"{len(book2)} 条")
 
     failed = [n for n, ok, _ in R if not ok]
     print(f"\n共 {len(R)} 项，通过 {len(R) - len(failed)}，失败 {len(failed)}")

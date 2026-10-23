@@ -18,7 +18,6 @@ from ..models import (
     WrongQuestion,
 )
 
-STRUGGLE_THRESHOLD = 5
 MASTERY_STREAK = 2
 
 
@@ -57,35 +56,21 @@ def question_ids_of_kp(db: Session, kp_id: uuid.UUID) -> list[uuid.UUID]:
 
 
 def is_kp_complete(db: Session, user_id: uuid.UUID, kp_id: uuid.UUID) -> bool:
+    """知识点完成 = 该知识点下每道题都做过一遍（对错不论）。
+
+    答错的题只进错题本，不再回到主流程；掌握度由错题本单独练。
+    """
     qids = question_ids_of_kp(db, kp_id)
     if not qids:
         return False
 
-    correct_ids = set(
-        db.execute(
-            select(Attempt.question_id)
-            .where(
-                Attempt.user_id == user_id,
-                Attempt.is_correct.is_(True),
-                Attempt.question_id.in_(qids),
-            )
-            .distinct()
-        ).scalars()
-    )
-
-    failed_rows = db.execute(
-        select(Attempt.question_id, func.count().label("cnt"))
-        .where(
+    attempted = db.execute(
+        select(func.count(func.distinct(Attempt.question_id))).where(
             Attempt.user_id == user_id,
-            Attempt.is_correct.is_(False),
             Attempt.question_id.in_(qids),
         )
-        .group_by(Attempt.question_id)
-    ).all()
-    struggled = {row.question_id for row in failed_rows if row.cnt >= STRUGGLE_THRESHOLD}
-
-    done = correct_ids | struggled
-    return len(done) >= len(qids)
+    ).scalar_one()
+    return attempted >= len(qids)
 
 
 def next_kp_of_level(db: Session, kp: KnowledgePoint) -> KnowledgePoint | None:

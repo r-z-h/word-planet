@@ -24,6 +24,8 @@
 | D-12 | 卡题兜底 | 某题累计答错 ≥ **5** 次，视为"已练习"，不再阻塞知识点完成 | 4.3、6.3 |
 | D-13 | 知识点题量 | 每个知识点 **≥ 15 题**，让"一天一个知识点"成为真实节奏 | 第 7 节 |
 | D-14 | 跟读出题通道 | `/question/next` 排除 `pronunciation`；当前知识点是跟读时改调 `/pronunciation/next` | 4.3、4.8、5.2 |
+| D-15 | 主流程单遍制 | 答过的题不再出现（对错都算），答错只进错题本；知识点完成改为"做过即算" | 4.3、4.4、6.3、6.7 |
+| D-16 | 错题练习 | 本期只收集，练习入口放 v2 | 6.7 |
 
 ---
 
@@ -268,12 +270,14 @@ CREATE TABLE push_subscriptions (
 - 响应：`{ "question": { "id", "question_type", "stem", "options", "knowledge_point_id" } }`
 - 规则：
   1. 前置校验：`has_tested=false` → `409 NOT_TESTED`；`current_knowledge_point_id` 为 `NULL` → `409 NO_CURRENT_KNOWLEDGE_POINT`。
-  2. 优先取 `wrong_questions` 中**该知识点**未掌握（`consecutive_correct < 2`）的题，按 `error_count DESC`。
-  3. 否则取该知识点**未做过**的题（`attempts` 中无该用户记录）。
-  4. 都无则取该知识点任意题。
-  5. **该知识点下无任何题目时，返回 `409`，`code = "EMPTY_KNOWLEDGE_POINT"`，并记录错误日志。禁止静默推进知识点**（v1.2：v1.1 的"自动推进到下一知识点"会让孩子未答题就跳级，已删除）。
-  6. 返回的 `question.question_type` 必须等于该知识点的 `question_type`，否则按数据错误返回 500 并记日志。
-  7. **排除跟读（v1.4，D-14）**：抽题池必须排除 `question_type = 'pronunciation'`。若当前知识点的 `question_type` 为 `pronunciation`，本接口返回 `409`，`code = "USE_PRONUNCIATION_ENDPOINT"`，前端改调 4.8 的 `/api/pronunciation/next`。
+  2. **恢复未答完的题**（v1.5）：若 `progress.last_question_id` 指向当前知识点、且该题尚未作答，直接返回它。中途退出后重新进入应看到同一道题。
+  3. 否则取该知识点**没做过**的题（`attempts` 中无记录），优先避开水平测试出过的题（`progress.test_seen_question_ids`）。
+  4. 被"测试题"挤空时，允许出测试出过但没做过的题，否则知识点会因凑不满题目数而永远无法完成（v1.5）。
+  5. 仍无则取该知识点任意题（兜底，正常不会走到）。
+  6. **不再重复出答过的题**：答错的题只进错题本，不回主流程（v1.5，D-15）。
+  7. **该知识点下无任何题目时，返回 `409`，`code = "EMPTY_KNOWLEDGE_POINT"`，并记录错误日志。禁止静默推进知识点**。
+  8. 返回的 `question.question_type` 必须等于该知识点的 `question_type`，否则按数据错误返回 500 并记日志。
+  9. **排除跟读（v1.4，D-14）**：抽题池必须排除 `question_type = 'pronunciation'`。若当前知识点的 `question_type` 为 `pronunciation`，本接口返回 `409`，`code = "USE_PRONUNCIATION_ENDPOINT"`，前端改调 4.8 的 `/api/pronunciation/next`。
      - 原因：本接口的响应**不包含 `answer`**，而跟读判题在前端，必须拿到标准答案，只能走 4.8。
 
 **POST /api/answer/submit**
@@ -290,10 +294,9 @@ CREATE TABLE push_subscriptions (
   1. 写入 `attempts`（`question_type` 记 `'question'`）。
   2. 答错：写/更新 `wrong_questions`（`error_count += 1`，`consecutive_correct = 0`）。答对且该题在错题本中：`consecutive_correct += 1`。
   3. **创建当日 `daily_tasks` 行**（`INSERT ... ON CONFLICT (user_id, task_date) DO NOTHING`）。缺行会导致任务永远无法完成（v1.2 修复 A1）。
-  4. 判断知识点完成（v1.4 含「练够即算」兜底，D-12）：对该知识点下的**每一道题**，满足以下任一条件即视为"已完成"——
-     - ① 该用户答对过（存在 `is_correct = true` 的 `attempts`）；
-     - ② 该用户在该题上**累计答错 ≥ 5 次**（视为已充分练习）。
-     只有当"已完成"的题目数 ≥ 该知识点题目总数时，才判定知识点完成。这样一道死磕不下的题不会把整个知识点卡死。
+  4. 判断知识点完成（v1.5 改为「做过即算」，D-15）：该知识点下，该用户**做过的不同题目数**（`COUNT(DISTINCT question_id)`，对错都算）≥ 该知识点题目总数时，判定完成。
+     - 理由：主流程改为只过一遍、答错不回头，若仍要求"全部答对"，知识点将永远无法完成。
+     - 掌握度不再由完成判定承担，改由错题本单独练习（本期只做收集，练习功能 v2）。
   5. **完成即推进**（v1.3 定稿，方案 A）：
      - 把知识点加入 `completed_knowledge_points`（**先判重再追加**，v1.2 修复 A4）；
      - `current_knowledge_point_id` 改为同等级下一个 `sort_order` 的知识点；无下一个则保持不动（见 6.10）；
@@ -310,7 +313,7 @@ CREATE TABLE push_subscriptions (
 - 响应：`{ "level", "current_knowledge_point", "completed_knowledge_points", "today_task": { "is_completed", "correct_count", "target_count" } }`
 - 口径：
   - `correct_count`：今日 `attempts` 中 `is_correct=true` 的**记录数**（含跟读，含重复答对）。
-  - `target_count`：**动态值**（v1.3 定稿）= 当前知识点下该用户尚未答对过的**不同题目数**；知识点已学完或未测时返回 `0`。`daily_tasks` 表不存该字段。
+  - `target_count`：**动态值**（v1.5 口径）= 当前知识点下该用户**还没做过**的不同题目数（对错都算"做过"）；知识点已学完或未测时返回 `0`。`daily_tasks` 表不存该字段。
   - `is_completed`：**表示"当天是否学完当前知识点"**，不再表示"答对 10 题"。
   - 日期口径见 6.4，**必须使用 `APP_TIMEZONE`**。
 
@@ -469,23 +472,21 @@ CREATE TABLE push_subscriptions (
 
 ### 6.3 知识点完成判定
 
-- 当前知识点下，该用户已答对的**不同题目数** ≥ 该知识点题目总数，判定完成。
-- 实现：`SELECT COUNT(DISTINCT question_id) FROM attempts WHERE user_id = :uid AND is_correct = true AND question_id IN (该知识点全部题 id)`，与该知识点 `COUNT(*) FROM questions WHERE knowledge_point_id = :kid` 比较。**同一道题答对多次只计 1 次**，不能靠重复刷题过关。
+- 当前知识点下，该用户**做过的不同题目数** ≥ 该知识点题目总数，判定完成（v1.5，D-15：对错都算）。
+- 实现：`SELECT COUNT(DISTINCT question_id) FROM attempts WHERE user_id = :uid AND question_id IN (该知识点全部题 id)`，与该知识点 `COUNT(*) FROM questions WHERE knowledge_point_id = :kid` 比较。
 - 完成后加入 `completed_knowledge_points`（**去重**），并按 6.10 推进。
 - **跟读题计入完成判定**（因为它们属于某个知识点的题目总数）。
-- **卡题兜底（v1.4，D-12）**：一道题累计答错 ≥ **5** 次后，视为"已练习"，计入完成判定所需的题目数，但**仍保留在错题本**里，后续复习仍会出现。这样可以避免孩子被一个难词永久卡在同一个知识点。
-  - 口径：该题在 `attempts` 中 `is_correct = false` 的记录数 ≥ 5。
-  - 该题若之后答对，正常计入"已完成"，不重复计数。
+- v1.4 的"答错 5 次视为已练习"规则已随本次改动删除——现在做过一次就算学过，不再存在卡题问题。
 - **完成即推进，无需额外确认**（v1.3 定稿，方案 A）。
 
 ### 6.4 每日任务
 
 **任务定义（v1.3 定稿，方案 A）：当天的任务就是"学完当前知识点"。**
 
-- 完成条件：当前知识点下，该用户已答对的**不同题目数** ≥ 该知识点题目总数（即 6.3 的判定）。
+- 完成条件：当前知识点下，该用户**做过的不同题目数** ≥ 该知识点题目总数（即 6.3 的判定，对错都算）。
 - 知识点完成的那一刻，`daily_tasks.is_completed` 置 `true`，并同时推进到下一个知识点。
 - **不存在"答对 10 题"这个固定目标**。v1.1/v1.2 的 `target_count = 10` 已删除，改为动态值（见 4.4）。
-- 未学完时：`is_completed` 保持 `false`，`current_knowledge_point_id` 不变，孩子继续在该知识点上练习，出题走 4.3 的复习优先顺序。
+- 未学完时：`is_completed` 保持 `false`，`current_knowledge_point_id` 不变，孩子继续把该知识点剩下的题做完（4.3 只出没做过的题）。
 - **`daily_tasks` 行由每次答题时懒创建**（`ON CONFLICT (user_id, task_date) DO NOTHING`），不在注册时预建。
 - **时区（v1.2 修复 A7）**：所有"今天"的判定必须显式写成 `(created_at AT TIME ZONE :tz)::date`，`:tz` 取 `APP_TIMEZONE`。**禁止依赖数据库 session 时区**，否则 UTC 服务器上早 8 点前的答题会被算到前一天。
 - **跨天行为**：一天没学完的知识点，第二天继续，不重置、不回退。
@@ -520,20 +521,15 @@ CREATE TABLE push_subscriptions (
 - 检查时机：`answer/submit` 与 `pronunciation/result` 共用的 `after_attempt()` 内（知识点完成事件也在该函数中处理）。
 - 写入用 `ON CONFLICT (user_id, badge_id) DO NOTHING`。
 
-### 6.7 错题优先
+### 6.7 错题处理（v1.5 重写）
 
-`GET /question/next` 顺序：
+**主流程不再复现错题。** 一道题在知识点内被作答一次后，无论对错都不再出现在 `/question/next` 里；答错的只写入 `wrong_questions`。
 
-1. 当前知识点下 `wrong_questions` 中未掌握的题，按 `error_count DESC`。
-2. 当前知识点下未做过的题。
-3. 当前知识点任意题。
-
-**"未掌握"的定义**：`wrong_questions.consecutive_correct < 2`。
-
+- 写入时机：`answer/submit` 与 `pronunciation/result` 共用 `after_attempt()`。
 - 答错：`error_count += 1`，`consecutive_correct = 0`。
-- 答对：`consecutive_correct += 1`；达到 2 视为已掌握，退出第 1 优先级，也不出现在 `/wrong-questions` 默认列表。
-- 再次答错则重置为 0，重新回到优先队列。
-- **跨知识点（D-03）**：当前知识点无错题可出时，允许从其他知识点的未掌握错题中取，按 `error_count DESC`。该行为只影响出题顺序，不改变当前知识点指认。
+- 答对且已在错题本：`consecutive_correct += 1`（本轮没有入口能触发，保留给 v2 的错题练习）。
+- `GET /wrong-questions` 默认只列 `consecutive_correct < 2` 的题；`include_mastered=true` 返回全部；`scope=current|all`，前端默认 `all`。
+- **v2 计划**：错题本增加"练习"入口，从错题本直接出题，答对 2 次视为掌握并移出默认列表。本期只做收集与展示。
 
 ### 6.8 听力题
 
@@ -648,6 +644,14 @@ CREATE TABLE push_subscriptions (
 29. 当天一道题都没答对时 19:00 能收到提醒；答对过 1 题但知识点没学完时**不再**收到提醒。
 30. `GET /api/progress` 的 `target_count` 随当前知识点剩余题数变化，**不等于固定 10**。
 31. 同一知识点跨两天学完时，`is_completed` 只在第二天那一次置 `true`（第一个知识点学完后继续推进不重置该字段）。
+
+**v1.5 新增项（主流程单遍制）：**
+
+36. 一道题答错后，主流程不再返回同一题；该题出现在错题本里。
+37. 一个知识点内 15 道题全部答错，知识点仍然判定完成并推进（不会卡死）。
+38. 答错后 `target_count` 同样递减（按"做过"计数，不按"答对"计数）。
+39. 水平测试出过的题在正常够用的情况下不会在学习阶段重复出现；当该知识点只剩测试题时允许出现，以保证能凑满题目数。
+40. 未答完就离开答题页，下次进入 `/play` 返回同一道题（`progress.last_question_id`）。
 
 **v1.4 新增项：**
 
@@ -771,3 +775,14 @@ CREATE TABLE push_subscriptions (
 | V4-3 | 第 7 节 | 每知识点 5 题导致"每日任务"3 分钟就完成 | 题量提到 ≥15 题 |
 | V4-4 | 需求 50 行 | "或下一学习环节"无定义 | 删除该措辞，只保留"下一个知识点" |
 | V4-5 | 需求 59/65/67/69/71 行 | 需求仍写着句子跟读、设定时间、阶段小测验、图片 | 需求文档同步收窄，标注 v2 |
+
+### 12.4 v1.5（主流程单遍制）
+
+| # | 位置 | 变更 |
+|---|---|---|
+| V5-1 | 4.3 | `/question/next` 删除"错题优先"，改为：恢复未答完的题 → 没做过的题（优先避开测试题）→ 测试题兜底 → 任意题 |
+| V5-2 | 6.3 / 4.3 步骤 4 | 知识点完成改为「做过即算」：`COUNT(DISTINCT question_id)`，不再要求答对 |
+| V5-3 | 6.7 | 重写为"错题只进错题本，不回主流程"；错题练习列入 v2 |
+| V5-4 | 4.4 | `target_count` 改为"还没做过的题数" |
+| V5-5 | 验收 | 新增 36–40 |
+| V5-6 | 全篇 | 删除 v1.4 的"答错 5 次视为已练习"规则 |
