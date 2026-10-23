@@ -7,6 +7,30 @@
 
 ---
 
+## 快速开始：一键启停
+
+```powershell
+.\dev.ps1 start      # 启动 PostgreSQL + 后端 + 前端
+.\dev.ps1 stop       # 全部关闭
+.\dev.ps1 restart    # 重启
+.\dev.ps1 status     # 看状态
+```
+
+脚本会：检查端口占用、清理上次强杀留下的 `postmaster.pid`、等待服务真正就绪、把日志写到 `.logs\`。
+
+两点安全设计：
+
+- **只关自己的进程**：如果端口被别的项目占着（比如 `D:\web开发\rzhvuedemo` 的 vite 占了 5173），脚本只提示、**不会杀它**。
+- 端口被占用时显示 `FOREIGN`，不会假装启动成功。
+
+如果 PowerShell 提示脚本未签名：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\dev.ps1 start
+```
+
+---
+
 ## 一、本机环境
 
 | 组件 | 位置 | 说明 |

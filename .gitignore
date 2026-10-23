@@ -34,6 +34,10 @@ certs/
 Thumbs.db
 .DS_Store
 
+# --- 本地运行产物 ---
+.run/
+.logs/
+
 # --- 编辑器 ---
 .vscode/
 .idea/
