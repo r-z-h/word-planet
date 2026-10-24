@@ -44,3 +44,5 @@ Thumbs.db
 
 # 由 tools/import_words.py 生成
 data/build/
+
+data/sources/ecdict-repo/
