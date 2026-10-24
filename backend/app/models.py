@@ -248,3 +248,19 @@ class LevelTest(Base):
     total: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
     passed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+class Word(Base):
+    """词典页用的单词条目（来源：ECDICT + 人教版词表）。"""
+
+    __tablename__ = "words"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=_uuid)
+    word: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    display: Mapped[str] = mapped_column(String(128), nullable=False)
+    level: Mapped[str] = mapped_column(String(2), nullable=False)
+    grade: Mapped[str] = mapped_column(String(32), nullable=False, default="")
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    phonetic: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    senses: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    definition_en: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_phrase: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

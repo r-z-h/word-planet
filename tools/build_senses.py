@@ -42,6 +42,7 @@ def main() -> None:
                 "phonetic": (row.get("phonetic") or "").strip(),
                 "pos": (row.get("pos") or "").strip(),
                 "senses": senses,
+                "definition_en": (row.get("definition") or "").strip() or None,
             }
 
     OUT.write_text(json.dumps(found, ensure_ascii=False, indent=1), encoding="utf-8")
