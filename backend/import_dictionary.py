@@ -1,6 +1,7 @@
 """把词表 + ECDICT 释义写入 words 表。"""
 
 import json
+import re
 from pathlib import Path
 
 from sqlalchemy import delete, select
@@ -11,6 +12,9 @@ from app.models import Word
 ROOT = Path(__file__).resolve().parents[1]
 WORDS = ROOT / "data" / "build" / "words.json"
 SENSES = ROOT / "data" / "build" / "word_senses.json"
+
+DOMAIN_TAG = re.compile(r"\[[^\]]+\]")  # [医][计][经] 等专业标签
+POS_PREFIX = re.compile(r"^(n|a|ad|adv|v|vi|vt|prep|pron|conj|num|art|int|aux)\.\s*")
 
 GRADE_ORDER = {
     "人教小学三年级": 10,
@@ -32,13 +36,33 @@ def main() -> None:
         for idx, item in enumerate(words[level]["words"]):
             key = item["word"].lower()
             info = senses.get(key)
+            textbook = [s.strip() for s in item["meaning"].split("；") if s.strip()]
+
             if info:
-                sense_list = info["senses"]
+                # 丢掉带领域标签的专业义项，其余全部保留
+                dict_senses = [
+                    s.strip()
+                    for s in info["senses"]
+                    if s.strip() and not DOMAIN_TAG.search(s)
+                ]
+                sense_list = [{"text": s, "source": "textbook"} for s in textbook]
+                for s in dict_senses:
+                    bare = POS_PREFIX.sub("", s).strip()
+                    # 课本义已经覆盖这条释义时不再重复展示
+                    if any(
+                        bare == x["text"]
+                        or all(part.strip() in x["text"] for part in re.split(r"[,，;；]", bare) if part.strip())
+                        for x in sense_list
+                    ):
+                        continue
+                    sense_list.append({"text": s, "source": "dict"})
+                if not sense_list:
+                    sense_list = [{"text": s, "source": "textbook"} for s in textbook]
                 phonetic = info.get("phonetic") or None
                 definition = info.get("definition_en")
             else:
                 # 词典没收录（多为词组）：回退到教材释义
-                sense_list = [s.strip() for s in item["meaning"].split("；") if s.strip()]
+                sense_list = [{"text": s, "source": "textbook"} for s in textbook]
                 phonetic = None
                 definition = None
 
