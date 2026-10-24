@@ -5,11 +5,11 @@
         <div>
           <div style="font-weight: 700">{{ kp?.name || '加载中' }}</div>
           <div class="muted">
-            {{ kp?.level }} ·
-            <template v-if="progress.kpTotal">
-              第 {{ Math.min(progress.kpDone + 1, progress.kpTotal) }} / {{ progress.kpTotal }} 题
+            {{ kp?.level }}<template v-if="setNo"> · 第 {{ setNo }} 套</template>
+            <template v-if="setTotal">
+              · 第 {{ Math.min(setDone + 1, setTotal) }} / {{ setTotal }} 题
             </template>
-            <template v-else>还剩 {{ remaining }} 题</template>
+            <template v-else> · 还剩 {{ remaining }} 题</template>
           </div>
         </div>
         <el-button text @click="goBack">返回</el-button>
@@ -63,11 +63,14 @@ const submitting = ref(false)
 const pronMode = ref(false)
 const leavingByResult = ref(false)
 const history = ref([])
+const setNo = ref(null)
+const setTotal = ref(0)
+const setDone = ref(0)
 
 const remaining = computed(() => progress.todayTask?.target_count ?? 0)
 const percent = computed(() => {
-  if (!progress.kpTotal) return 0
-  return Math.min(100, Math.round((progress.kpDone / progress.kpTotal) * 100))
+  if (!setTotal.value) return 0
+  return Math.min(100, Math.round((setDone.value / setTotal.value) * 100))
 })
 const renderer = computed(() => (pronMode.value ? PronunciationGame : QuestionRenderer))
 
@@ -95,7 +98,18 @@ async function next(excludeId = '') {
     const params = excluded.length ? { exclude_id: excluded.join(',') } : {}
     const { data } = await http.get(url, { params })
     question.value = data.question
+    if (data.set_no) {
+      setNo.value = data.set_no
+      setTotal.value = data.set_total
+      setDone.value = data.set_done
+    }
   } catch (e) {
+    const code = e?.response?.data?.detail?.code
+    if (code === 'KNOWLEDGE_POINT_FINISHED' || code === 'SET_FINISHED') {
+      ElMessage.success('这个模块已经学完了，去试试别的模块吧')
+      router.replace('/modules')
+      return
+    }
     ElMessage.error(apiError(e))
   }
 }
@@ -150,10 +164,14 @@ async function onSubmit(payload) {
 
     if (advanced) {
       leavingByResult.value = true
-      router.replace({ path: '/result', query: { finished: finishedName } })
+      router.replace({
+        path: '/result',
+        query: { set: String(setNo.value || ''), kp: finishedName }
+      })
       return
     }
 
+    setDone.value = Math.min(setDone.value + 1, setTotal.value)
     setTimeout(() => {
       submitting.value = false
       next()

@@ -1,4 +1,4 @@
-"""初始化种子数据：7 个知识点 × 15 题 + 4 个徽章 + 每题解析。
+﻿"""初始化种子数据：7 个知识点 × 15 题 + 4 个徽章 + 每题解析。
 
 幂等：按 (level, sort_order) 判知识点，按 (knowledge_point_id, stem) 判题目；
 已存在的题会补写缺失的 explanation。
@@ -8,18 +8,20 @@
 from sqlalchemy import select
 
 from app.database import SessionLocal
-from app.models import Attempt, Badge, KnowledgePoint, Question
+from app.models import Attempt, Badge, KnowledgePoint, Question, WrongQuestion
 
 # ---------------------------------------------------------------- 知识点定义
 
 KP_DEFS = [
-    ("L1", "字母表", "letter", 1),
-    ("L1", "基础问候词", "word", 2),
-    ("L2", "常用单词", "word", 1),
-    ("L2", "简单拼写", "spelling", 2),
-    ("L2", "单词跟读", "pronunciation", 3),
-    ("L3", "听力理解", "listening", 1),
-    ("L3", "拼写进阶", "spelling", 2),
+    # (等级, 名称, 题型, 顺序, 是否计入升级门槛)
+    # 字母表只有 26 个字母、听力只有手写 15 句，凑不满 3 套，不计入门槛
+    ("L1", "字母表", "letter", 1, False),
+    ("L1", "基础问候词", "word", 2, True),
+    ("L2", "常用单词", "word", 1, True),
+    ("L2", "简单拼写", "spelling", 2, True),
+    ("L2", "单词跟读", "pronunciation", 3, True),
+    ("L3", "听力理解", "listening", 1, False),
+    ("L3", "拼写进阶", "spelling", 2, True),
 ]
 
 DIFFICULTY = {"L1": 1, "L2": 2, "L3": 3}
@@ -240,16 +242,24 @@ def seed_badges(db) -> None:
     db.flush()
 
 
-def ensure_kp(db, level, name, qtype, order) -> KnowledgePoint:
+def ensure_kp(db, level, name, qtype, order, counts_for_gate=True) -> KnowledgePoint:
     kp = db.execute(
         select(KnowledgePoint).where(
             KnowledgePoint.level == level, KnowledgePoint.sort_order == order
         )
     ).scalar_one_or_none()
     if kp is None:
-        kp = KnowledgePoint(level=level, name=name, sort_order=order, question_type=qtype)
+        kp = KnowledgePoint(
+            level=level,
+            name=name,
+            sort_order=order,
+            question_type=qtype,
+            counts_for_gate=counts_for_gate,
+        )
         db.add(kp)
         db.flush()
+    elif kp.counts_for_gate != counts_for_gate:
+        kp.counts_for_gate = counts_for_gate
     return kp
 
 
@@ -283,18 +293,23 @@ def ensure_question(db, kp, qtype, stem, options, answer, difficulty, explanatio
 
 
 def prune_stale(db, kp, expected_stems) -> None:
-    """删掉该知识点下已经不在种子里的题（没有作答记录时）。"""
+    """只清理第 1 套里已经不在种子中的题；第 2 套起由 seed_words.py 生成，不能动。"""
     stale = db.execute(
         select(Question).where(
-            Question.knowledge_point_id == kp.id, Question.stem.notin_(expected_stems)
+            Question.knowledge_point_id == kp.id,
+            Question.set_no == 1,
+            Question.stem.notin_(expected_stems),
         )
     ).scalars().all()
     for q in stale:
         used = db.execute(
             select(Attempt.id).where(Attempt.question_id == q.id).limit(1)
         ).first()
-        if used:
-            print(f"  跳过删除（已有作答记录）：{q.stem[:40]}")
+        in_wrong = db.execute(
+            select(WrongQuestion.id).where(WrongQuestion.question_id == q.id).limit(1)
+        ).first()
+        if used or in_wrong:
+            print(f"  跳过删除（已有作答/错题记录）：{q.stem[:40]}")
             continue
         db.delete(q)
         print(f"  已删除旧题：{q.stem[:40]}")
@@ -305,8 +320,8 @@ def seed() -> None:
         seed_badges(db)
 
         kps = {}
-        for level, name, qtype, order in KP_DEFS:
-            kps[(level, order)] = ensure_kp(db, level, name, qtype, order)
+        for level, name, qtype, order, gate in KP_DEFS:
+            kps[(level, order)] = ensure_kp(db, level, name, qtype, order, gate)
 
         def add_all(kp, qtype, items, explanation_index=3):
             for item in items:

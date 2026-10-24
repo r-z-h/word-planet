@@ -67,7 +67,7 @@ def main() -> None:
 
     # ---- 答题直到知识点完成
     advanced = False
-    for _ in range(40):
+    for _ in range(200):
         r = client.get("/api/question/next")
         if r.status_code != 200:
             check("出题成功", False, r.text[:120])
@@ -92,7 +92,7 @@ def main() -> None:
 
     r = client.get("/api/progress")
     p = r.json()
-    check("已完成知识点被记录", len(p["completed_knowledge_points"]) == 1, str(p["completed_knowledge_points"]))
+    check("已完成一套被记录", p["completed_sets"] == 1, str(p["completed_sets"]))
     check("当天任务标记完成", p["today_task"]["is_completed"] is True, str(p["today_task"]))
 
     r = client.get("/api/streak")
@@ -104,6 +104,17 @@ def main() -> None:
 
     # ---- 幂等
     r = client.get("/api/question/next")
+    if r.status_code != 200:
+        # 当前模块学完时换一个还有下一套的模块
+        ov = client.get("/api/lesson/overview").json()
+        for k in ov["knowledge_points"]:
+            if k["current_set"]:
+                client.post("/api/lesson/select", json={"knowledge_point_id": k["id"]})
+                break
+        r = client.get("/api/question/next")
+    if r.status_code != 200:
+        check("幂等场景取题", False, r.text[:100])
+        return
     q = r.json()["question"]
     key = uuid.uuid4().hex
     payload = {"question_id": q["id"], "answer": answer_of(q["id"]), "idempotency_key": key}
@@ -123,7 +134,7 @@ def main() -> None:
     r = client.get("/api/report")
     rep = r.json()
     check("报告字段齐全", set(rep) >= {"level", "completed_knowledge_points", "total_knowledge_points", "last_7_days_completed", "daily_attempts", "wrong_questions"})
-    check("报告：已完成知识点数 = 1", rep["completed_knowledge_points"] == 1, str(rep["completed_knowledge_points"]))
+    check("报告：达标模块数 = 0（只完成 1 套）", rep["completed_knowledge_points"] == 0, str(rep["completed_knowledge_points"]))
     check("报告：同等级知识点总数 = 2/3", rep["total_knowledge_points"] in (2, 3), str(rep["total_knowledge_points"]))
     check("报告：近 7 天完成天数 = 1", rep["last_7_days_completed"] == 1, str(rep["last_7_days_completed"]))
     check("报告：daily_attempts 为 7 天", len(rep["daily_attempts"]) == 7)
@@ -146,7 +157,7 @@ def main() -> None:
     with SessionLocal() as db:
         kp = db.execute(
             select(KnowledgePoint)
-            .where(KnowledgePoint.level == "L1")
+            .where(KnowledgePoint.level == "L1", KnowledgePoint.counts_for_gate.is_(True))
             .order_by(KnowledgePoint.sort_order)
         ).scalars().first()
         u = db.execute(select(User).where(User.account == account2)).scalar_one()
@@ -156,9 +167,12 @@ def main() -> None:
         p.current_knowledge_point_id = kp.id
         db.commit()
 
-    done = False
-    for _ in range(30):
-        q = c2.get("/api/question/next").json()["question"]
+    done = 0
+    for _ in range(120):
+        resp2 = c2.get("/api/question/next")
+        if resp2.status_code != 200:
+            check("L1 场景：出题", False, resp2.text[:80]); return
+        q = resp2.json()["question"]
         rr = c2.post(
             "/api/answer/submit",
             json={
@@ -168,10 +182,11 @@ def main() -> None:
             },
         )
         if rr.json()["progress_advanced"]:
-            done = True
-            break
+            done += 1
+            if done >= 3:
+                break
 
-    check("L1 场景：知识点完成并推进", done)
+    check("L1 场景：完成 3 套达标", done == 3, str(done))
     codes = [i["code"] for i in c2.get("/api/achievements").json()["items"]]
     check("L1 用户拿到 complete_l1_first 徽章", "complete_l1_first" in codes, str(codes))
 

@@ -30,6 +30,15 @@ def prepared_database():
     from seed import seed
 
     seed()
+
+    # 生成第 2 套起的题目，否则「按套推进」在测试库里只有第 1 套
+    from pathlib import Path
+
+    words_file = Path(__file__).resolve().parents[2] / "data" / "build" / "words.json"
+    if words_file.exists():
+        import seed_words
+
+        seed_words.main()
     yield
     Base.metadata.drop_all(bind=engine)
 
@@ -61,12 +70,15 @@ def answer_of(question_id: str) -> str:
 
 
 def force_level(user_id: str, level: str) -> str:
-    """把用户直接放到指定等级的第一个知识点，返回知识点 id。"""
+    """把用户直接放到指定等级「计入门槛」的第一个知识点，返回知识点 id。"""
     with SessionLocal() as db:
         kp = (
             db.execute(
                 select(KnowledgePoint)
-                .where(KnowledgePoint.level == level)
+                .where(
+                    KnowledgePoint.level == level,
+                    KnowledgePoint.counts_for_gate.is_(True),
+                )
                 .order_by(KnowledgePoint.sort_order)
             )
             .scalars()
@@ -74,9 +86,11 @@ def force_level(user_id: str, level: str) -> str:
         )
         user = db.get(User, uuid.UUID(user_id))
         user.level = level
+        user.max_level = level
         user.has_tested = True
         progress = db.get(Progress, user.id)
         progress.current_knowledge_point_id = kp.id
+        progress.last_question_id = None
         db.commit()
         return str(kp.id)
 
@@ -100,6 +114,31 @@ def complete_current_kp(client, limit: int = 40) -> bool:
         if res.json()["progress_advanced"]:
             return True
     return False
+
+
+def complete_sets(client, count: int = 3, limit: int = 200) -> int:
+    """连续完成 count 套，返回实际完成的套数。"""
+    done = 0
+    for _ in range(count):
+        for _ in range(limit):
+            resp = client.get("/api/question/next")
+            if resp.status_code != 200:
+                return done
+            q = resp.json()["question"]
+            res = client.post(
+                "/api/answer/submit",
+                json={
+                    "question_id": q["id"],
+                    "answer": answer_of(q["id"]),
+                    "idempotency_key": uuid.uuid4().hex,
+                },
+            )
+            if res.status_code != 200:
+                return done
+            if res.json()["progress_advanced"]:
+                done += 1
+                break
+    return done
 
 
 @pytest.fixture()

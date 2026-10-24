@@ -2,15 +2,15 @@
   <div class="page">
     <div class="card" style="text-align: center; padding: 36px 20px">
       <div class="burst">🎉</div>
-      <h2 class="title" style="margin-top: 12px">这个知识点学完啦！</h2>
+      <h2 class="title" style="margin-top: 12px">这一套练完了！</h2>
       <p class="muted" style="margin-bottom: 20px">
-        已完成「{{ finishedName || '当前知识点' }}」，继续加油。
+        已完成「{{ finishedName || '当前模块' }}」第 {{ setNo || '?' }} 套，继续加油。
       </p>
 
       <div class="stats">
         <div class="stat">
-          <div class="num">{{ completedCount }}</div>
-          <div class="muted">累计完成知识点</div>
+          <div class="num">{{ progress.completedKnowledgePoints.length }}</div>
+          <div class="muted">达标模块数</div>
         </div>
         <div class="stat">
           <div class="num">{{ todayCorrect }}</div>
@@ -55,10 +55,10 @@ import { useProgressStore } from '../stores/progress'
 const route = useRoute()
 const progress = useProgressStore()
 
-const finishedName = ref(route.query.finished || '')
+const finishedName = ref(route.query.kp || '')
+const setNo = ref(route.query.set || '')
 const streakDays = ref(0)
 
-const completedCount = computed(() => progress.completedKnowledgePoints.length)
 const todayCorrect = computed(() => progress.todayTask.correct_count || 0)
 const nextName = computed(() => progress.currentKnowledgePoint?.name || '')
 

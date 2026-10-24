@@ -1,11 +1,11 @@
 import uuid
 from datetime import datetime, timezone
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..models import Attempt, KnowledgePoint, Question, User, WrongQuestion
+from ..models import Attempt, KnowledgePoint, Progress, Question, User, WrongQuestion
 from .attempts import (
-    advance_if_complete,
     award_badges,
     get_or_create_daily_task,
     get_progress,
@@ -13,6 +13,7 @@ from .attempts import (
     local_today,
     touch_streak,
 )
+from .lesson import SETS_REQUIRED, is_set_complete, mark_set_complete
 
 
 def update_wrong_book(
@@ -51,7 +52,7 @@ def apply_attempt(
     question_type: str = "question",
     idempotency_key: str | None = None,
 ) -> dict:
-    """一次作答的全部副作用：记录、错题本、每日任务、知识点推进、连续学习、徽章。"""
+    """一次作答的副作用：记录、错题本、套完成、每日任务、连续学习、徽章。"""
     had_correct_today = had_correct_attempt_today(db, user.id) if is_correct else False
 
     db.add(
@@ -66,24 +67,39 @@ def apply_attempt(
     db.flush()
 
     update_wrong_book(db, user.id, question.id, is_correct)
-    get_or_create_daily_task(db, user.id, local_today(db))
 
-    progress = get_progress(db, user.id)
-    current = (
-        db.get(KnowledgePoint, progress.current_knowledge_point_id)
-        if progress.current_knowledge_point_id
-        else None
-    )
+    day = local_today(db)
+    task = get_or_create_daily_task(db, user.id, day)
 
-    advanced = False
-    if current is not None and question.knowledge_point_id == current.id:
-        advanced, current = advance_if_complete(db, user, current)
+    kp = db.get(KnowledgePoint, question.knowledge_point_id)
+    progress_row = get_progress(db, user.id)
+    set_completed = False
+    if kp is not None and is_set_complete(db, user.id, kp.id, question.set_no):
+        mark_set_complete(db, user, kp, question.set_no)
+        set_completed = True
+        task.is_completed = True
+
+        # 该知识点累计完成满 3 套 -> 记入「已完成知识点」（用于徽章与报告）
+        from .lesson import completed_set_numbers
+
+        done = completed_set_numbers(db, user.id, kp.id)
+        if len(done) >= SETS_REQUIRED:
+            completed = list(progress_row.completed_knowledge_points or [])
+            if str(kp.id) not in completed:
+                completed.append(str(kp.id))
+                progress_row.completed_knowledge_points = completed
 
     touch_streak(db, user.id, had_correct_today, is_correct)
     new_badges = award_badges(db, user)
 
+    current = (
+        db.get(KnowledgePoint, progress_row.current_knowledge_point_id)
+        if progress_row.current_knowledge_point_id
+        else None
+    )
+
     return {
-        "progress_advanced": advanced,
+        "progress_advanced": set_completed,
         "current_knowledge_point": current,
         "new_badges": new_badges,
     }

@@ -54,6 +54,7 @@ def _finish_test(db: Session, user: User, state: TestState) -> str:
     progress.current_knowledge_point_id = first.id if first else None
     progress.last_question_id = None
     progress.test_seen_question_ids = list(state.used_question_ids)
+    user.max_level = level_name
 
     db.commit()
     _test_sessions.pop(str(user.id), None)

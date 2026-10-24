@@ -10,6 +10,12 @@ from ..models import Attempt, KnowledgePoint, Progress, Question, User
 from ..schemas import AnswerSubmitRequest, AnswerSubmitResponse, QuestionNextResponse
 from ..services.attempt_flow import apply_attempt
 from ..services.judge import is_correct as judge_correct
+from ..services.lesson import (
+    current_set_no,
+    is_set_complete,
+    mark_set_complete,
+    resolve_current_kp,
+)
 
 router = APIRouter(prefix="/api", tags=["question"])
 
@@ -25,24 +31,7 @@ def _kp_payload(kp: KnowledgePoint | None) -> dict | None:
     }
 
 
-def _current_kp(db: Session, user: User) -> KnowledgePoint:
-    progress = db.get(Progress, user.id)
-    if progress is None or progress.current_knowledge_point_id is None:
-        raise HTTPException(
-            status_code=409,
-            detail={"detail": "没有当前知识点", "code": "NO_CURRENT_KNOWLEDGE_POINT"},
-        )
-    kp = db.get(KnowledgePoint, progress.current_knowledge_point_id)
-    if kp is None:
-        raise HTTPException(
-            status_code=409,
-            detail={"detail": "没有当前知识点", "code": "NO_CURRENT_KNOWLEDGE_POINT"},
-        )
-    return kp
-
-
 def _parse_exclude(value: str | None) -> list[uuid.UUID]:
-    """exclude_id 支持逗号分隔多个：本次会话里已经跳过的题都不再出。"""
     if not value:
         return []
     result: list[uuid.UUID] = []
@@ -57,14 +46,26 @@ def _parse_exclude(value: str | None) -> list[uuid.UUID]:
     return result
 
 
-def _base_pool(kp_id: uuid.UUID, exclude_ids: list[uuid.UUID] | None = None):
-    stmt = select(Question).where(
-        Question.knowledge_point_id == kp_id,
-        Question.question_type != "pronunciation",
-    )
-    if exclude_ids:
-        stmt = stmt.where(Question.id.notin_(exclude_ids))
-    return stmt
+def _set_counts(
+    db: Session, user_id: uuid.UUID, kp_id: uuid.UUID, set_no: int
+) -> tuple[int, int]:
+    total = db.execute(
+        select(func.count())
+        .select_from(Question)
+        .where(Question.knowledge_point_id == kp_id, Question.set_no == set_no)
+    ).scalar_one()
+    done = db.execute(
+        select(func.count(func.distinct(Attempt.question_id)))
+        .select_from(Attempt)
+        .join(Question, Question.id == Attempt.question_id)
+        .where(
+            Attempt.user_id == user_id,
+            Question.knowledge_point_id == kp_id,
+            Question.set_no == set_no,
+            Attempt.question_type != "practice",
+        )
+    ).scalar_one()
+    return total, done
 
 
 @router.get("/question/next", response_model=QuestionNextResponse)
@@ -73,8 +74,12 @@ def next_question(
     user: User = Depends(require_tested),
     db: Session = Depends(get_db),
 ):
-    kp = _current_kp(db, user)
-    excluded_ids = _parse_exclude(exclude_id)
+    kp = resolve_current_kp(db, user)
+    if kp is None:
+        raise HTTPException(
+            status_code=409,
+            detail={"detail": "没有当前知识点", "code": "NO_CURRENT_KNOWLEDGE_POINT"},
+        )
 
     if kp.question_type == "pronunciation":
         raise HTTPException(
@@ -85,74 +90,76 @@ def next_question(
             },
         )
 
-    total = db.execute(
-        select(func.count()).select_from(Question).where(Question.knowledge_point_id == kp.id)
-    ).scalar_one()
-    if total == 0:
-        raise HTTPException(
-            status_code=409,
-            detail={"detail": "当前知识点没有题目", "code": "EMPTY_KNOWLEDGE_POINT"},
-        )
-
+    excluded = _parse_exclude(exclude_id)
     progress = db.get(Progress, user.id)
-    question = None
 
-    # 主流程只过一遍：答过的题（无论对错）不再出现，答错的只进错题本
-    answered = select(Attempt.question_id).where(Attempt.user_id == user.id)
+    for _ in range(50):
+        set_no = current_set_no(db, user.id, kp.id)
+        if set_no is None:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "detail": "这个知识点的题都学完了",
+                    "code": "KNOWLEDGE_POINT_FINISHED",
+                },
+            )
 
-    # 1) 恢复上次未作答的那道题（中途退出后重新进来要看到同一题）
-    if progress is not None and progress.last_question_id is not None:
-        pending = db.get(Question, progress.last_question_id)
-        if (
-            pending is not None
-            and pending.knowledge_point_id == kp.id
-            and pending.question_type != "pronunciation"
-            and pending.id not in excluded_ids
-        ):
-            question = pending
+        question = None
+        if progress is not None and progress.last_question_id is not None:
+            pending = db.get(Question, progress.last_question_id)
+            if (
+                pending is not None
+                and pending.knowledge_point_id == kp.id
+                and pending.set_no == set_no
+                and pending.id not in excluded
+            ):
+                question = pending
 
-    # 2) 当前知识点没做过的题（优先跳过水平测试里已经出过的）
-    if question is None:
-        seen_in_test = {uuid.UUID(x) for x in (progress.test_seen_question_ids or [])}
-        stmt = _base_pool(kp.id, excluded_ids).where(Question.id.notin_(answered))
-        if seen_in_test:
-            stmt = stmt.where(Question.id.notin_(seen_in_test))
-        question = db.execute(stmt.order_by(func.random()).limit(1)).scalar_one_or_none()
+        if question is None:
+            answered = select(Attempt.question_id).where(Attempt.user_id == user.id)
+            stmt = select(Question).where(
+                Question.knowledge_point_id == kp.id,
+                Question.set_no == set_no,
+                Question.question_type != "pronunciation",
+                Question.id.notin_(answered),
+            )
+            if excluded:
+                stmt = stmt.where(Question.id.notin_(excluded))
+            question = db.execute(stmt.order_by(func.random()).limit(1)).scalar_one_or_none()
 
-    # 3) 上面被测试题挤空时，允许出“测试出过但没做过”的题，
-    #    否则该知识点会因为凑不满题目数而永远无法完成
-    if question is None:
-        question = db.execute(
-            _base_pool(kp.id, excluded_ids)
-            .where(Question.id.notin_(answered))
-            .order_by(func.random())
-            .limit(1)
-        ).scalar_one_or_none()
+        if question is not None:
+            if progress is not None and progress.last_question_id != question.id:
+                progress.last_question_id = question.id
+                db.commit()
 
-    # 4) 兜底：本知识点全部做过时允许重复（正常不会走到，做完就会推进）
-    if question is None:
-        question = db.execute(
-            _base_pool(kp.id).order_by(func.random()).limit(1)
-        ).scalar_one_or_none()
+            total, done = _set_counts(db, user.id, kp.id, set_no)
+            return QuestionNextResponse(
+                question={
+                    "id": str(question.id),
+                    "question_type": question.question_type,
+                    "stem": question.stem,
+                    "options": question.options,
+                    "knowledge_point_id": str(question.knowledge_point_id),
+                },
+                set_no=set_no,
+                set_total=total,
+                set_done=done,
+                knowledge_point_name=kp.name,
+            )
 
-    if question is None:
+        # 这一套已经没有未答的题：记为完成，继续下一套
+        if is_set_complete(db, user.id, kp.id, set_no):
+            mark_set_complete(db, user, kp, set_no)
+            db.commit()
+            continue
+
         raise HTTPException(
             status_code=409,
-            detail={"detail": "当前知识点没有题目", "code": "EMPTY_KNOWLEDGE_POINT"},
+            detail={"detail": "这一套没有可出的题", "code": "EMPTY_SET"},
         )
 
-    if progress is not None and progress.last_question_id != question.id:
-        progress.last_question_id = question.id
-        db.commit()
-
-    return QuestionNextResponse(
-        question={
-            "id": str(question.id),
-            "question_type": question.question_type,
-            "stem": question.stem,
-            "options": question.options,
-            "knowledge_point_id": str(question.knowledge_point_id),
-        }
+    raise HTTPException(
+        status_code=409, detail={"detail": "没有可出的题", "code": "NO_QUESTION"}
     )
 
 

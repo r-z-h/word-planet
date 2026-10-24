@@ -49,6 +49,10 @@ class QuestionOut(BaseModel):
 
 class QuestionNextResponse(BaseModel):
     question: QuestionOut
+    set_no: int = 1
+    set_total: int = 15
+    set_done: int = 0
+    knowledge_point_name: str = ""
 
 
 class TestQuestionOut(BaseModel):
@@ -104,11 +108,15 @@ class TodayTaskOut(BaseModel):
 
 class ProgressResponse(BaseModel):
     level: str | None
+    max_level: str | None = None
     current_knowledge_point: KnowledgePointOut | None
     completed_knowledge_points: list[str]
     today_task: TodayTaskOut
     kp_total: int = 0
     kp_done: int = 0
+    set_no: int | None = None
+    completed_sets: int = 0
+    total_sets: int = 0
 
 
 class StreakResponse(BaseModel):
@@ -224,3 +232,64 @@ class PracticeResultResponse(BaseModel):
     consecutive_correct: int = 0
     mastered: bool = False
     duplicated: bool = False
+
+
+# ---------------- 模块 / 套 / 能力测试 ----------------
+
+
+class KpProgressOut(BaseModel):
+    id: str
+    name: str
+    question_type: str
+    counts_for_gate: bool
+    total_sets: int
+    completed_sets: int
+    current_set: int | None = None
+    meets_gate: bool = False
+
+
+class LessonOverview(BaseModel):
+    level: str | None
+    max_level: str | None
+    required_sets: int
+    knowledge_points: list[KpProgressOut]
+    gate_ready: bool
+    can_test: bool
+    next_level: str | None = None
+    switchable_levels: list[str] = []
+
+
+class SelectKpRequest(BaseModel):
+    knowledge_point_id: str
+
+
+class SwitchLevelRequest(BaseModel):
+    level: str
+
+
+class LevelTestStartResponse(BaseModel):
+    question: TestQuestionOut
+    index: int
+
+
+class LevelTestAnswerRequest(BaseModel):
+    question_id: str
+    answer: str
+
+
+class LevelTestAnswerResponse(BaseModel):
+    is_finished: bool
+    score: int = 0
+    total: int = 10
+    passed: bool | None = None
+    next_level: str | None = None
+
+
+class LevelTestChooseRequest(BaseModel):
+    go_next: bool
+
+
+class LevelTestChooseResponse(BaseModel):
+    level: str
+    max_level: str
+    knowledge_point: KnowledgePointOut | None = None

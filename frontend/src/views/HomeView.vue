@@ -4,7 +4,10 @@
       <div style="display: flex; justify-content: space-between; align-items: center">
         <div>
           <div class="title" style="margin: 0">{{ user.nickname }}</div>
-          <div class="muted">{{ user.level }} · {{ progress.currentKnowledgePoint?.name || '—' }}</div>
+          <div class="muted">
+            {{ lesson.level }}<template v-if="lesson.maxLevel && lesson.maxLevel !== lesson.level">
+              · 已解锁 {{ lesson.maxLevel }}</template>
+          </div>
         </div>
         <el-button text @click="logout">退出</el-button>
       </div>
@@ -12,32 +15,65 @@
       <el-divider />
 
       <StreakBadge :streak="streak" />
+    </div>
 
-      <div style="margin-top: 16px">
-        <el-descriptions :column="2" border size="small">
-          <el-descriptions-item label="今天答对">
-            {{ progress.todayTask.correct_count }} 题
-          </el-descriptions-item>
-          <el-descriptions-item label="当前知识点还剩">
-            {{ progress.todayTask.target_count }} 题
-          </el-descriptions-item>
-        </el-descriptions>
-        <el-alert
-          :title="progress.todayTask.is_completed ? '今天的任务已经完成 ✅' : '学完当前知识点，今天的任务就完成了'"
-          :type="progress.todayTask.is_completed ? 'success' : 'info'"
-          :closable="false"
-          style="margin-top: 12px"
-        />
+    <!-- 今天这一套 -->
+    <div class="card">
+      <div class="muted">今天要学的</div>
+      <div class="row" style="margin-top: 6px">
+        <div>
+          <div style="font-weight: 700; font-size: 17px">
+            {{ kp ? kp.name : '还没有可学的模块' }}
+          </div>
+          <div class="muted" v-if="kp">
+            第 {{ progress.set_no || 1 }} 套 · 还剩 {{ progress.todayTask.target_count }} 题
+          </div>
+        </div>
+        <el-button type="primary" :disabled="!kp" @click="goPlay">
+          {{ progress.todayTask.is_completed ? '继续学' : '开始学习' }}
+        </el-button>
       </div>
 
-      <el-button
-        type="primary"
-        size="large"
-        style="width: 100%; margin-top: 12px; height: 52px; font-size: 17px"
-        @click="goPlay"
-      >
-        继续学习
-      </el-button>
+      <el-progress
+        :percentage="setPercent"
+        :show-text="false"
+        :stroke-width="8"
+        style="margin-top: 12px"
+      />
+      <div class="muted" style="margin-top: 6px">
+        {{ progress.kp_done }} / {{ progress.kp_total }} 题
+        <span v-if="kp"> · 该模块已完成 {{ kp.completed_sets }}/{{ kp.total_sets }} 套</span>
+      </div>
+
+      <el-button style="margin-top: 12px" @click="$router.push('/modules')">切换学习模块</el-button>
+    </div>
+
+    <!-- 能力测试 -->
+    <div class="card">
+      <div class="row">
+        <div>
+          <div style="font-weight: 700">能力测试</div>
+          <div class="muted">{{ testHint }}</div>
+        </div>
+        <el-button
+          :type="lesson.canTest ? 'success' : 'default'"
+          :disabled="!lesson.canTest"
+          @click="$router.push('/level-test')"
+        >
+          {{ lesson.canTest ? '去测试' : '未解锁' }}
+        </el-button>
+      </div>
+    </div>
+
+    <!-- 等级回访 -->
+    <div class="card" v-if="lesson.switchableLevels.length > 1">
+      <div style="font-weight: 700; margin-bottom: 8px">等级切换</div>
+      <div class="muted" style="margin-bottom: 10px">升级后仍可以回到低等级继续练习。</div>
+      <el-radio-group v-model="pickedLevel" @change="switchLevel">
+        <el-radio-button v-for="lv in lesson.switchableLevels" :key="lv" :value="lv">
+          {{ lv }}
+        </el-radio-button>
+      </el-radio-group>
     </div>
 
     <div class="card">
@@ -59,26 +95,41 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import http, { apiError } from '../api/http'
 import { useUserStore } from '../stores/user'
 import { useProgressStore } from '../stores/progress'
+import { useLessonStore } from '../stores/lesson'
 import StreakBadge from '../components/StreakBadge.vue'
 
 const router = useRouter()
 const user = useUserStore()
 const progress = useProgressStore()
+const lesson = useLessonStore()
 
 const streak = ref({ current_streak: 0, longest_streak: 0, last_study_date: null })
 const pushState = ref('off')
+const pickedLevel = ref('')
+
+const kp = computed(() => progress.currentKnowledgePoint)
+const setPercent = computed(() => {
+  if (!progress.kp_total) return 0
+  return Math.min(100, Math.round((progress.kp_done / progress.kp_total) * 100))
+})
+const testHint = computed(() => {
+  if (!lesson.nextLevel) return '已经是最高等级'
+  if (lesson.canTest) return `本级已达标，可以挑战 ${lesson.nextLevel}`
+  return `本级每个计入门槛的模块各完成 ${lesson.requiredSets} 套后可解锁`
+})
 
 onMounted(load)
 
 async function load() {
   try {
-    await progress.fetchProgress()
+    await Promise.all([progress.fetchProgress(), lesson.fetchOverview()])
+    pickedLevel.value = lesson.level || ''
     const { data } = await http.get('/streak')
     streak.value = data
   } catch (e) {
@@ -88,6 +139,18 @@ async function load() {
 
 function goPlay() {
   router.push('/play')
+}
+
+async function switchLevel(level) {
+  try {
+    await lesson.switchLevel(level)
+    await progress.fetchProgress()
+    user.level = level
+    ElMessage.success(`已切换到 ${level}`)
+  } catch (e) {
+    ElMessage.error(apiError(e))
+    pickedLevel.value = lesson.level
+  }
 }
 
 function logout() {
@@ -133,3 +196,12 @@ function urlBase64ToUint8Array(base64String) {
   return output
 }
 </script>
+
+<style scoped>
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+</style>

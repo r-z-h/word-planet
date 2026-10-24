@@ -31,6 +31,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     nickname: Mapped[str] = mapped_column(String(64), nullable=False)
     level: Mapped[str | None] = mapped_column(String(2), nullable=True)
+    max_level: Mapped[str | None] = mapped_column(String(2), nullable=True)
     has_tested: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -47,6 +48,8 @@ class KnowledgePoint(Base):
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
     question_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    # 是否计入「本级能力测试」的门槛（字母表、听力理解这类题量固定的不计）
+    counts_for_gate: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     __table_args__ = (
         UniqueConstraint("level", "sort_order", name="uq_kp_level_sort"),
@@ -206,4 +209,42 @@ class PushSubscription(Base):
     )
     endpoint: Mapped[str] = mapped_column(String(512), unique=True, nullable=False)
     subscription: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class SetProgress(Base):
+    """用户完成某一套的记录。重复练习不再新增行，也不改统计。"""
+
+    __tablename__ = "set_progress"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=_uuid)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    knowledge_point_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("knowledge_points.id"), nullable=False
+    )
+    set_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    correct_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    total_count: Mapped[int] = mapped_column(Integer, nullable=False, default=15)
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "knowledge_point_id", "set_no", name="uq_set_progress"),
+    )
+
+
+class LevelTest(Base):
+    """一次级别能力测试的结果。level 指被测试的等级（测本级内容）。"""
+
+    __tablename__ = "level_tests"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=_uuid)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    level: Mapped[str] = mapped_column(String(2), nullable=False)
+    score: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    total: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
+    passed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

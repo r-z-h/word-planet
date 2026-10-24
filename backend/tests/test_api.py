@@ -1,6 +1,6 @@
 import uuid
 
-from tests.conftest import answer_of, complete_current_kp, force_level
+from tests.conftest import answer_of, complete_current_kp, complete_sets, force_level
 
 
 def test_register_creates_progress_and_returns_token(client):
@@ -96,11 +96,16 @@ def test_cannot_retake_test(user_client):
 
 
 def test_complete_kp_advances_and_marks_task(l1_client):
+    # 完成 1 套即算今天学过
     assert complete_current_kp(l1_client) is True
 
     progress = l1_client.get("/api/progress").json()
-    assert len(progress["completed_knowledge_points"]) == 1
+    assert progress["completed_sets"] == 1
     assert progress["today_task"]["is_completed"] is True
+    # 完成 3 套后该知识点才算「达标」
+    assert complete_sets(l1_client, 2) == 2
+    progress = l1_client.get("/api/progress").json()
+    assert len(progress["completed_knowledge_points"]) == 1
 
     streak = l1_client.get("/api/streak").json()
     assert streak["current_streak"] == 1
@@ -273,7 +278,7 @@ def test_pronunciation_flow_completes_kp(l1_client):
 
 
 def test_badges_awarded_once(l1_client):
-    assert complete_current_kp(l1_client) is True
+    assert complete_sets(l1_client, 3) == 3
 
     items = l1_client.get("/api/achievements").json()["items"]
     codes = [i["code"] for i in items]
@@ -282,7 +287,7 @@ def test_badges_awarded_once(l1_client):
 
 
 def test_report_shape(l1_client):
-    complete_current_kp(l1_client)
+    complete_sets(l1_client, 3)
     report = l1_client.get("/api/report").json()
 
     assert set(report) >= {

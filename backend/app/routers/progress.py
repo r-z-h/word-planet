@@ -7,19 +7,33 @@ from ..deps import get_current_user, require_tested
 from ..models import Attempt, DailyTask, KnowledgePoint, Progress, Question, Streak, User
 from ..schemas import ProgressResponse, StreakResponse, TodayTaskOut
 from ..services.attempts import local_date_of, local_today
+from ..services.lesson import (
+    completed_set_numbers,
+    current_set_no,
+    kp_set_numbers,
+    resolve_current_kp,
+)
 
 router = APIRouter(prefix="/api", tags=["progress"])
+
+
+def _kp_out(kp: KnowledgePoint | None) -> dict | None:
+    if kp is None:
+        return None
+    return {
+        "id": str(kp.id),
+        "level": kp.level,
+        "name": kp.name,
+        "question_type": kp.question_type,
+    }
 
 
 @router.get("/progress", response_model=ProgressResponse)
 def get_progress(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     progress = db.get(Progress, user.id)
-    completed = []
-    current_kp = None
-    if progress is not None:
-        completed = list(dict.fromkeys(progress.completed_knowledge_points or []))
-        if progress.current_knowledge_point_id:
-            current_kp = db.get(KnowledgePoint, progress.current_knowledge_point_id)
+    completed = list(dict.fromkeys(progress.completed_knowledge_points or [])) if progress else []
+
+    current_kp = resolve_current_kp(db, user) if user.has_tested else None
 
     today = local_today(db)
     task = db.execute(
@@ -36,48 +50,54 @@ def get_progress(user: User = Depends(get_current_user), db: Session = Depends(g
         )
     ).scalar_one()
 
-    target_count = 0
-    kp_total = 0
-    kp_done = 0
+    set_no = None
+    set_total = 0
+    set_done = 0
+    done_sets = 0
+    total_sets = 0
+
     if current_kp is not None:
-        qids_stmt = select(Question.id).where(Question.knowledge_point_id == current_kp.id)
-        kp_total = db.execute(
-            select(func.count()).select_from(Question).where(
-                Question.knowledge_point_id == current_kp.id
-            )
-        ).scalar_one()
+        total_sets = len(kp_set_numbers(db, current_kp.id))
+        done_sets = len(completed_set_numbers(db, user.id, current_kp.id))
+        set_no = current_set_no(db, user.id, current_kp.id)
 
-        # 做过的题（对错都算，练习不算），与 6.3 的完成判定一致
-        kp_done = db.execute(
-            select(func.count(func.distinct(Attempt.question_id))).where(
-                Attempt.user_id == user.id,
-                Attempt.question_id.in_(qids_stmt),
-                Attempt.question_type != "practice",
+        if set_no is not None:
+            qids = select(Question.id).where(
+                Question.knowledge_point_id == current_kp.id, Question.set_no == set_no
             )
-        ).scalar_one()
+            set_total = db.execute(
+                select(func.count())
+                .select_from(Question)
+                .where(
+                    Question.knowledge_point_id == current_kp.id,
+                    Question.set_no == set_no,
+                )
+            ).scalar_one()
+            set_done = db.execute(
+                select(func.count(func.distinct(Attempt.question_id))).where(
+                    Attempt.user_id == user.id,
+                    Attempt.question_id.in_(qids),
+                    Attempt.question_type != "practice",
+                )
+            ).scalar_one()
 
-        target_count = max(kp_total - kp_done, 0)
+    target_count = max(set_total - set_done, 0)
 
     return ProgressResponse(
         level=user.level,
-        current_knowledge_point=(
-            {
-                "id": str(current_kp.id),
-                "level": current_kp.level,
-                "name": current_kp.name,
-                "question_type": current_kp.question_type,
-            }
-            if current_kp
-            else None
-        ),
+        max_level=user.max_level or user.level,
+        current_knowledge_point=_kp_out(current_kp),
         completed_knowledge_points=completed,
         today_task=TodayTaskOut(
             is_completed=bool(task.is_completed) if task else False,
             correct_count=correct_count,
             target_count=target_count,
         ),
-        kp_total=kp_total,
-        kp_done=kp_done,
+        kp_total=set_total,
+        kp_done=set_done,
+        set_no=set_no,
+        completed_sets=done_sets,
+        total_sets=total_sets,
     )
 
 
