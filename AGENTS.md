@@ -10,7 +10,7 @@
 少儿英语学习平台。Vue 3 + FastAPI + PostgreSQL，题库来自人教版词表（KyleBing，BSD-3）+ ECDICT 释义（MIT）。
 
 - 需求：`需求说明书.md`
-- 规格：`Agent实现说明书.md`（v1.6，**尚未同步"按套推进/能力测试/词典"这批改动**）
+- 规格：`Agent实现说明书.md`（v1.7，已同步"按套推进/能力测试/词典/答错义项"）
 - 操作规则：`agents操作规则.md`（**动手前先复述、有歧义先问、超出范围先报备**）
 
 ## 2. 怎么跑起来
@@ -35,10 +35,12 @@ cd backend
 .\.venv\Scripts\python.exe smoke.py                    # 24 项真实 HTTP
 .\.venv\Scripts\python.exe verify_p1.py                # 12 项：错题练习/解析
 .\.venv\Scripts\python.exe verify_sets.py              # 18 项：按套推进/能力测试/回访
+.\.venv\Scripts\python.exe verify_words.py             # 23 项：词典接口
+.\.venv\Scripts\python.exe verify_feedback.py          # 15 项：答错展示义项
 .\.venv\Scripts\python.exe audit_content.py            # 3105 题内容审计
 ```
 
-改题库后必须重跑 `audit_content.py`。
+改题库后必须重跑 `audit_content.py`；改义项后必须重跑 `import_dictionary.py`。
 
 ## 4. 已完成
 
@@ -48,22 +50,30 @@ cd backend
 - **能力测试**：本级门槛知识点各满 3 套 → `POST /api/level-test/start` → 10 题对 8 过 →
   解锁下一级（`users.max_level`）→ `POST /api/level-test/choose` 让用户选升级/留级
 - **等级回访**：`POST /api/lesson/switch-level`，只能切到 `max_level` 以内的等级
+- **义项清洗（L1+L2+L3 全量）**：课本义改用 `data/sources/pep-words`（分学段），机械清洗后置顶；
+  `data/sense_cleanup.json` 人工清单覆盖 1109 个词（L1 103 / L2 258 / L3 748）+ 35 条课本义纠错；
+  `backend/import_dictionary.py` 可重复执行（`--preview` 只出预览不写库）
+- **词典页 `/words`**：只查当前等级、未学优先→教材册序、搜索中英文、默认 2 条义项+展开、
+  状态标签（未学/已学/有错题）、英文释义只给 L3
+- **答错展示义项**：`/answer/submit` 与 `/pronunciation/result` 返回 `answer_text` + `word`
+  （单词/音标/全部义项/L3 英文）；答题页答错停住，点「下一题」才继续，答对保持自动跳
 - 题库 3105 题 / 207 套；词典表 `words` 1972 词
 
 ## 5. 进行中 / 待办
 
 | 事项 | 状态 |
 |---|---|
-| 词典页 `/words` | **未做**。设计已定：默认显示搜索框+全部列表，滚动加载；未学优先→教材册序；每条默认 2 条义项+「展开」；状态标签（未学/已学/有错题）；只搜当前等级；英文释义只给 L3 |
-| 答错显示全部义项 | **未做**。设计已定：答错停住，显示正确答案+音标+全部义项（L3 加英文）+「下一题」；答对保持自动跳；不自动朗读；不强制停留 |
-| 义项清洗 | **进行中**。已做：删 `[医][计][经]` 等领域标签、课本义置顶、去掉与课本义重复的行。待做：L1/L2/L3 逐批人工判断删俚语/生僻义，直接写库 |
-| 说明书同步 | **未做**。第 3/4/6 节与验收标准未跟上"按套推进/能力测试/词典" |
+| 题库题干清洗 | **未做，且已定"题干保持不动"**。全库 273 道题的题干是 `“男孩, 儿子, 孩子气的人, 男仆”用英语怎么说？` 这种（`data/build/words.json` 的 `meaning` 来自 kylebing 而非 pep）。要修得重建题目，`seed_words.py` 遇到已有作答记录会跳过 |
+| 跟读 | 暂不修：本地访问不了 Google 语音服务，等部署服务器再说 |
 
 ## 6. 已拍板的关键决策（不要再重新讨论）
 
 - 题库**不由 agent 生成**，必须来自现成数据源
 - 义项：课本义置顶并标 `source=textbook`；带领域标签的专业义项**直接删**；俚语、需要特定语境才有意义的义项**直接删**；课本外但通用常用的保留
+- **课本义统一取 `data/sources/pep-words`**（L1/L2 小学册、L3 初中册），不再用 kylebing 的 `meaning`
+- **义项只能改 `data/sense_cleanup.json`**，再跑 `import_dictionary.py`；直接改库会被下次导入覆盖
 - 词典页排序：未学优先 → 教材册顺序；搜索只搜当前等级；英文释义只对 L3 显示
+- 词典「已学」= 该词对应题目**答对过至少一次**（不是"做过"）
 - 答错才展示义项，答对保持自动跳
 - 跟读功能因本地无法访问 Google 语音服务而不可用，**暂不修**，等部署服务器再说
 
@@ -72,6 +82,9 @@ cd backend
 - **Edge 朗读**：必须本地声音优先（`frontend/src/utils/speech.js` 有打分逻辑），否则会选到在线声音导致延迟和错误发音
 - **跟读**：`SpeechRecognition` 依赖 Google 服务，当前网络不可用；手机端还受自签证书限制
 - **seed.py 的 prune**：只清理第 1 套，第 2 套起由 `seed_words.py` 生成，不要误删
+- **义项清洗**：只改 `data/sense_cleanup.json`（键必须**小写**，`China`/`English` 这类用 `china`/`english`），
+  再跑 `import_dictionary.py`；它是 `DELETE` 后重建整表，别只改库
+- **词典英文释义**：ECDICT 里是字面量 `\n`，`import_dictionary.py` 导入时会转成真换行，别在库里手改
 - **测试库**：pytest 用 `word_planet_test`，会自动跑 `seed.py` + `seed_words.py`，需要 `data/build/words.json` 存在
 - 本机无 WSL、无 Docker；PostgreSQL 用便携版
 

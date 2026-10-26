@@ -1,7 +1,7 @@
  # 少儿英语游戏化学习平台 — Agent 实现规格书
 
-> **版本**：v1.4（Q1 定稿 + 5 项收尾修订，全文无待定项）
-> **变更**：v1.2 按 40 条审查意见修订；v1.3 落地 Q1 决策（方案 A）；v1.4 修复跟读分流、卡题兜底、题量节奏，见第 12 节。
+> **版本**：v1.7（与实现同步：按套推进 / 能力测试 / 等级回访 / 词典页 / 答错展示义项）
+> **变更**：v1.2 按 40 条审查意见修订；v1.3 落地 Q1 决策（方案 A）；v1.4 修复跟读分流、卡题兜底、题量节奏；v1.5 主流程单遍制；v1.6 错题练习；v1.7 同步按套推进、能力测试、等级回访、词典与义项，见 12.6。
 > **执行须知（v1.2 新增，替代 v1.1 第 3–5 行）**：本规格未覆盖的歧义，**必须停下来提问，不得自行假设、不得用注释代替决策**。
 
 ---
@@ -10,7 +10,7 @@
 
 | 编号 | 议题 | 结论 | 影响位置 |
 |---|---|---|---|
-| D-01 | 进度推进方式 | **方案 A 任务驱动**：当天任务 = 学完当前知识点，完成即推进；连续学习只看当天是否答对 ≥1 题 | 4.3、4.4、6.3、6.4、6.5、第 8 节、第 9 节 |
+| D-01 | 进度推进方式 | **方案 A 任务驱动**（v1.7 起推进单位改为「套」，见 D-17/D-18）：当天任务 = 完成一套；连续学习只看当天是否答对 ≥1 题 | 4.3、4.4、6.3、6.4、6.5、第 8 节、第 9 节 |
 | D-02 | 跟读题归属 | 独立知识点（`question_type=pronunciation`），只做**单词**，不做句子 | 3、4.8、5.2、6.9、7 |
 | D-03 | 错题复习范围 | 当前知识点优先，**其次跨知识点**；跟读答错**也入错题本** | 4.3、4.5、6.7 |
 | D-04 | 阶段小测验 | **本期不做**，`is_quiz` 仅建列；需求侧标注 v2 | 3、5、9 |
@@ -21,11 +21,19 @@
 | D-09 | 每日提醒 | 固定 19:00，走浏览器 Web Push，不做自定义时间 | 第 8 节 |
 | D-10 | 徽章 | 保持 4 个，不按知识点批量生成 | 6.6 |
 | D-11 | 等级升级 | 只能通过水平测试决定，学习过程不改变等级 | 6.2、6.10 |
-| D-12 | 卡题兜底 | 某题累计答错 ≥ **5** 次，视为"已练习"，不再阻塞知识点完成 | 4.3、6.3 |
+| D-12 | 卡题兜底 | ~~某题累计答错 ≥ 5 次视为"已练习"~~（v1.5 已删除，见 V5-6） | 4.3、6.3 |
 | D-13 | 知识点题量 | 每个知识点 **≥ 15 题**，让"一天一个知识点"成为真实节奏 | 第 7 节 |
 | D-14 | 跟读出题通道 | `/question/next` 排除 `pronunciation`；当前知识点是跟读时改调 `/pronunciation/next` | 4.3、4.8、5.2 |
-| D-15 | 主流程单遍制 | 答过的题不再出现（对错都算），答错只进错题本；知识点完成改为"做过即算" | 4.3、4.4、6.3、6.7 |
+| D-15 | 主流程单遍制 | 答过的题不再出现（对错都算），答错只进错题本；**v1.7 起完成单位改为「套」**（见 D-17） | 4.3、4.4、6.3、6.7 |
 | D-16 | 错题练习 | 本期只收集，练习入口放 v2 | 6.7 |
+| D-17 | 学习推进单位 | **套**。知识点下每 15 题为一套；一套内所有题都作答过（对错不论）即完成该套，写入 `set_progress` | 3、4.3、4.11、6.3 |
+| D-18 | 达标与升级门槛 | 一个知识点完成 **≥3 套**为达标；本级所有 `counts_for_gate` 的知识点都达标，才解锁能力测试 | 6.3、6.11 |
+| D-19 | 不计门槛的知识点 | `counts_for_gate=false`：L1 字母表、L3 听力理解（题量固定，凑不满 3 套） | 3、7 |
+| D-20 | 能力测试 | 门槛达成后开测；本级题库随机 10 题，对 8 题通过；**通过只解锁 `max_level`**，由用户选择升级或留级 | 4.12、6.12 |
+| D-21 | 等级回访 | 可切回 `max_level` 以内的任意等级，`users.level` 随之改变，越级返回 409 | 4.11、6.12 |
+| D-22 | 词典页 | 只查当前等级；未学优先 → 教材册序；搜索英文/中文均可；英文释义只给 L3；“已学”= 该词对应题目答对过至少一次 | 4.13、6.13 |
+| D-23 | 答错展示义项 | 答错停住，展示正确答案+音标+全部义项（L3 加英文）+「下一题」；答对保持自动跳；不自动朗读；不强制停留 | 4.3、5.2、6.14 |
+| D-24 | 义项来源与清洗 | 课本义取人教版词表 `data/sources/pep-words`，机械清洗后置顶并标 `source=textbook`；人工清洗清单 `data/sense_cleanup.json` 整词覆盖 | 3、7、6.13 |
 
 ---
 
@@ -91,6 +99,7 @@ CREATE TABLE users (
   password_hash VARCHAR(255) NOT NULL,
   nickname VARCHAR(64) NOT NULL,
   level VARCHAR(2) CHECK (level IN ('L1','L2','L3')),
+  max_level VARCHAR(2) CHECK (max_level IN ('L1','L2','L3')),  -- v1.7：能力测试解锁到的最高等级
   has_tested BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -101,6 +110,7 @@ CREATE TABLE knowledge_points (
   name VARCHAR(128) NOT NULL,
   sort_order INT NOT NULL,
   question_type VARCHAR(32) NOT NULL,
+  counts_for_gate BOOLEAN NOT NULL DEFAULT TRUE,   -- v1.7：是否计入本级能力测试门槛
   UNIQUE (level, sort_order)
 );
 
@@ -111,6 +121,8 @@ CREATE TABLE questions (
   stem TEXT NOT NULL,
   options JSONB,
   answer TEXT NOT NULL,
+  explanation TEXT,                                  -- v1.6：答错展示的解析
+  set_no INT NOT NULL DEFAULT 1,                     -- v1.7：属于第几套（15 题一套）
   difficulty INT NOT NULL DEFAULT 1 CHECK (difficulty BETWEEN 1 AND 3),
   is_quiz BOOLEAN NOT NULL DEFAULT FALSE,
   UNIQUE (knowledge_point_id, stem)
@@ -120,6 +132,8 @@ CREATE TABLE progress (
   user_id UUID PRIMARY KEY REFERENCES users(id),
   current_knowledge_point_id UUID REFERENCES knowledge_points(id),
   completed_knowledge_points JSONB NOT NULL DEFAULT '[]',   -- UUID 字符串数组，必须去重
+  last_question_id UUID REFERENCES questions(id),            -- v1.5：未作答、下次进 /play 要恢复的题
+  test_seen_question_ids JSONB NOT NULL DEFAULT '[]',        -- v1.5：水平测试出过的题，学习阶段优先避开
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -182,6 +196,40 @@ CREATE TABLE push_subscriptions (
   subscription JSONB NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE TABLE set_progress (                                 -- v1.7：按套推进的完成记录
+  id UUID PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES users(id),
+  knowledge_point_id UUID NOT NULL REFERENCES knowledge_points(id),
+  set_no INT NOT NULL,
+  correct_count INT NOT NULL DEFAULT 0,
+  total_count INT NOT NULL DEFAULT 15,
+  completed_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (user_id, knowledge_point_id, set_no)
+);
+
+CREATE TABLE level_tests (                                  -- v1.7：本级能力测试结果
+  id UUID PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES users(id),
+  level VARCHAR(2) NOT NULL,                                -- 被测试的等级（测的是本级内容）
+  score INT NOT NULL DEFAULT 0,
+  total INT NOT NULL DEFAULT 10,
+  passed BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE words (                                        -- v1.7：词典页
+  id UUID PRIMARY KEY,
+  word VARCHAR(128) UNIQUE NOT NULL,                        -- 小写，唯一
+  display VARCHAR(128) NOT NULL,                            -- 展示形式（保留原大小写）
+  level VARCHAR(2) NOT NULL,
+  grade VARCHAR(32) NOT NULL DEFAULT '',
+  order_index INT NOT NULL DEFAULT 0,                       -- 教材册序 × 10000 + 册内序号
+  phonetic VARCHAR(128),
+  senses JSONB NOT NULL DEFAULT '[]',                       -- [{"text": ..., "source": "textbook"|"dict"}]
+  definition_en TEXT,                                       -- 英文释义（只给 L3 下发）
+  is_phrase BOOLEAN NOT NULL DEFAULT FALSE
+);
 ```
 
 **字段口径（v1.2）：**
@@ -195,6 +243,16 @@ CREATE TABLE push_subscriptions (
 - `knowledge_points.question_type` 必须与其下所有 `questions.question_type` 一致。种子脚本与运行时抽题均需校验，不一致按数据错误处理。
 - `questions.is_quiz`：**预留字段，本期不实现任何 `/quiz/*` 接口与前端页面**。只建列、默认 `FALSE`。
 - `badges.condition_value`：`streak` 类型为天数，`answer_correct` 类型为题目数；**`complete_kp` 类型忽略此字段**（固定填 `1` 占位），判定逻辑见 6.6。
+
+**v1.7 补充口径：**
+
+- `questions.set_no`：题所属的套号，从 1 起；同一知识点的题按题干顺序每 15 题一套。抽题与完成判定都按 `(knowledge_point_id, set_no)` 定位。
+- `questions.explanation`：答错时展示的解析文本，所有题必须填写（种子脚本会检查）。
+- `knowledge_points.counts_for_gate=false` 的知识点不计入本级能力测试门槛，但照样能学、照样记 `set_progress`。
+- `users.max_level`：初始等于水平测试定的 `level`；能力测试通过后上调。`/api/lesson/switch-level` 与 `/api/level-test/choose` 都以它为上限。
+- `progress.last_question_id`：每次 `/question/next`、`/pronunciation/next` 写入；答完即清空。它的作用是中途退出后回到同一道题。
+- `attempts.question_type`：`question`（主流程）/ `pronunciation`（跟读）/ `practice`（错题练习）。**`practice` 不计入套完成、知识点达标与每日任务**。
+- `words.senses`：数组，元素为 `{"text": str, "source": "textbook"|"dict"}`；**第一条必须是课本义**（`source=textbook`），人工清洗清单可以整体替换某词的义项列表。
 
 ---
 
@@ -266,8 +324,9 @@ CREATE TABLE push_subscriptions (
 
 **GET /api/question/next**
 
-- 无请求参数，当前知识点取自 `progress.current_knowledge_point_id`。
-- 响应：`{ "question": { "id", "question_type", "stem", "options", "knowledge_point_id" } }`
+- 查询参数：`?exclude_id=<逗号分隔的题目 id>`（可选，前端「跳过」用；被排除的题本次不再返回）。
+- 当前知识点取自 `progress.current_knowledge_point_id`，出题范围是**当前未完成的套**。
+- 响应：`{ "question": { "id", "question_type", "stem", "options", "knowledge_point_id" }, "set_no", "set_total", "set_done", "knowledge_point_name" }`
 - 规则：
   1. 前置校验：`has_tested=false` → `409 NOT_TESTED`；`current_knowledge_point_id` 为 `NULL` → `409 NO_CURRENT_KNOWLEDGE_POINT`。
   2. **恢复未答完的题**（v1.5）：若 `progress.last_question_id` 指向当前知识点、且该题尚未作答，直接返回它。中途退出后重新进入应看到同一道题。
@@ -283,7 +342,12 @@ CREATE TABLE push_subscriptions (
 **POST /api/answer/submit**
 
 - 请求：`{ "question_id": str, "answer": str, "idempotency_key": str }`
-- 响应：`{ "is_correct": bool, "correct_answer": str, "progress_advanced": bool, "current_knowledge_point": {...}, "new_badges": [...], "duplicated": bool }`
+- 响应：`{ "is_correct": bool, "correct_answer": str, "progress_advanced": bool, "current_knowledge_point": {...}, "new_badges": [...], "duplicated": bool, "answer_text": str|null, "word": {...}|null }`
+- **v1.7 新增字段（答错展示义项，D-23）**：
+  - `progress_advanced`：**表示"完成了一套"**（v1.7 起不再是"完成知识点"）。
+  - `answer_text`：正确答案的展示文本（选择题取正确选项内容，拼写/跟读取 `answer`）。
+  - `word`：`{ "word", "phonetic", "senses": [{"text","source"}], "definition_en" }`；`definition_en` **只对 L3 单词下发**。字母题查不到单词时 `word = null`，但 `answer_text` 仍有值。
+  - 幂等重放（`duplicated=true`）同样返回 `answer_text` 与 `word`。
 - **判题规则（归一化，唯一实现处）**：
   - 取 `questions.answer` 与提交的 `answer` 各自 `strip().lower()` 后比较。
   - 选择题（`letter`/`word`/`listening`）提交选项 key（`"A"`/`"B"`/`"C"`/`"D"`），服务端转大写后比较。
@@ -294,27 +358,31 @@ CREATE TABLE push_subscriptions (
   1. 写入 `attempts`（`question_type` 记 `'question'`）。
   2. 答错：写/更新 `wrong_questions`（`error_count += 1`，`consecutive_correct = 0`）。答对且该题在错题本中：`consecutive_correct += 1`。
   3. **创建当日 `daily_tasks` 行**（`INSERT ... ON CONFLICT (user_id, task_date) DO NOTHING`）。缺行会导致任务永远无法完成（v1.2 修复 A1）。
-  4. 判断知识点完成（v1.5 改为「做过即算」，D-15）：该知识点下，该用户**做过的不同题目数**（`COUNT(DISTINCT question_id)`，对错都算）≥ 该知识点题目总数时，判定完成。
-     - 理由：主流程改为只过一遍、答错不回头，若仍要求"全部答对"，知识点将永远无法完成。
-     - 掌握度不再由完成判定承担，改由错题本单独练习（本期只做收集，练习功能 v2）。
-  5. **完成即推进**（v1.3 定稿，方案 A）：
-     - 把知识点加入 `completed_knowledge_points`（**先判重再追加**，v1.2 修复 A4）；
-     - `current_knowledge_point_id` 改为同等级下一个 `sort_order` 的知识点；无下一个则保持不动（见 6.10）；
-     - 当日 `daily_tasks.is_completed` 置 `true`。
-  6. 未完成时：`daily_tasks.is_completed` 保持 `false`，`current_knowledge_point_id` 不变，下一次出题继续走本条开头的复习优先顺序。
+  4. **判断当前套是否完成**（v1.7，D-17）：当前套下的题，该用户**做过的不同题目数**（`COUNT(DISTINCT question_id)`，对错都算，排除 `practice`）≥ 该套题目数时，该套完成。
+     - 理由：主流程只过一遍、答错不回头，若仍要求"全部答对"，套将永远无法完成。
+     - 掌握度不由完成判定承担，改由错题本练习承担（4.10）。
+  5. **套完成后**（v1.7）：
+     - 写入 `set_progress`（`UNIQUE (user_id, knowledge_point_id, set_no)`，重复不再新增）；
+     - 当日 `daily_tasks.is_completed` 置 `true`；
+     - 该知识点累计完成套数 ≥ 3 时，把知识点加入 `completed_knowledge_points`（**先判重再追加**，v1.2 修复 A4）；
+     - **不自动切换知识点**：下一套仍属于当前知识点，全部套答完后 `/question/next` 返回 409 `KNOWLEDGE_POINT_FINISHED`，由用户在 `/modules` 里选下一个模块（见 6.3）。
+  6. 套未完成时：`daily_tasks.is_completed` 保持不变，`current_knowledge_point_id` 不变，下一次出题继续在当前套内取没做过的题。
   7. 检查徽章，满足则 `INSERT ... ON CONFLICT DO NOTHING`。
-  8. 连续学习：**当天首次答对即触发**，与是否完成知识点无关（见 6.5）。
-  9. **上述逻辑抽成公共函数 `after_attempt()`，4.8 跟读入口必须复用同一函数**（v1.2 修复 A3）。
+  8. 连续学习：**当天首次答对即触发**，与是否完成套无关（见 6.5）。
+  9. **上述逻辑抽成公共函数 `apply_attempt()`，4.8 跟读与 4.10 错题练习必须复用同一函数**（v1.2 修复 A3）。
 
 ### 4.4 进度与每日任务
 
 **GET /api/progress**
 
-- 响应：`{ "level", "current_knowledge_point", "completed_knowledge_points", "today_task": { "is_completed", "correct_count", "target_count" } }`
+- 响应：`{ "level", "max_level", "current_knowledge_point", "completed_knowledge_points", "today_task": { "is_completed", "correct_count", "target_count" }, "kp_total", "kp_done", "set_no", "completed_sets", "total_sets" }`
 - 口径：
   - `correct_count`：今日 `attempts` 中 `is_correct=true` 的**记录数**（含跟读，含重复答对）。
-  - `target_count`：**动态值**（v1.5 口径）= 当前知识点下该用户**还没做过**的不同题目数（对错都算"做过"）；知识点已学完或未测时返回 `0`。`daily_tasks` 表不存该字段。
-  - `is_completed`：**表示"当天是否学完当前知识点"**，不再表示"答对 10 题"。
+  - `target_count`（v1.7）：**当前套还没做过的题数**；当前知识点全部套完成、或未测时返回 `0`。
+  - `is_completed`：**表示"今天是否完成过至少一套"**；套完成那一刻置 `true`，当天不回退。
+  - `kp_total` / `kp_done`：当前套的总题数 / 已做题数，供「第 X / Y 题」与进度条使用。
+  - `set_no` / `completed_sets` / `total_sets`：当前套号 / 该知识点已完成套数 / 总套数（`set_no` 为 `null` 表示该知识点已全部学完）。
+  - `max_level`：能力测试解锁到的最高等级。
   - 日期口径见 6.4，**必须使用 `APP_TIMEZONE`**。
 
 **GET /api/streak**
@@ -359,7 +427,7 @@ CREATE TABLE push_subscriptions (
 - 口径：
   - `completed_knowledge_points`：`progress.completed_knowledge_points` **去重后的长度**。
   - `total_knowledge_points`：**用户当前等级下**的知识点总数。
-  - `last_7_days_completed`：近 7 天（含今天）`daily_tasks.is_completed=true` 的天数。**v1.3 口径变化**：字段名不变，但含义由"当天答对 10 题"变为"当天**学完了一个知识点**"，该值会明显低于 v1.1 预期，属预期行为。
+  - `last_7_days_completed`：近 7 天（含今天）`daily_tasks.is_completed=true` 的天数，即"**当天完成过至少一套**"的天数（v1.7 口径；v1.3 时的"学完一个知识点"已随按套推进失效）。
   - `daily_attempts[].count`：该日 `attempts` 总条数。
   - `wrong_questions`：调用 4.5 的 `include_mastered=true`，包含已掌握项（v1.2：修复"死条款"，4.5 的参数确有使用者）。
   - 日期一律按 `APP_TIMEZONE` 计算。
@@ -377,7 +445,7 @@ CREATE TABLE push_subscriptions (
 - 响应：`{ "recorded": true, "progress_advanced": bool, "new_badges": [...], "duplicated": bool }`
 - 规则：
   - `word_id` 即 `questions.id`，`question_type` 必须为 `'pronunciation'`。
-  - 写入 `attempts`（`question_type = 'pronunciation'`），**并调用与 4.3 相同的 `after_attempt()`**：含错题本、每日任务、知识点完成判定、徽章、连续学习（v1.2 修复 A3）。
+  - 写入 `attempts`（`question_type = 'pronunciation'`），**并调用与 4.3 相同的 `apply_attempt()`**：含错题本、每日任务、套完成判定、徽章、连续学习（v1.2 修复 A3）。
   - **判题权例外**：`SpeechRecognition` 的识别文本只存在于浏览器，后端无法取得，因此 `is_correct` 由前端比对后上报。这是全项目**唯一**的前端判题点。
   - **已知风险（v1.2 记录）**：前端上报意味着该字段可被伪造。接受此风险的前提是"使用者是自己孩子"；若将来多租户上线，必须改为上传识别文本由后端比对。
 
@@ -422,6 +490,76 @@ CREATE TABLE push_subscriptions (
 
 - 响应：`{ "pending": int, "mastered": int, "by_knowledge_point": [ { "knowledge_point_id", "knowledge_point_name", "level", "pending", "mastered", "is_current" } ] }`
 
+### 4.11 学习模块（v1.7）
+
+**GET /api/lesson/overview**
+
+- 响应：`{ "level", "max_level", "required_sets", "knowledge_points": [ { "id", "name", "question_type", "counts_for_gate", "total_sets", "completed_sets", "current_set", "meets_gate" } ], "gate_ready", "can_test", "next_level", "switchable_levels" }`
+- 口径：
+  - `current_set`：该知识点还没完成的最小套号；全部学完为 `null`。
+  - `meets_gate`：该知识点已完成套数 ≥ `required_sets`（固定 3）。
+  - `gate_ready`：所有 `counts_for_gate=true` 的知识点都 `meets_gate`。
+  - `can_test`：`gate_ready` 且存在下一级。
+  - `switchable_levels`：`max_level` 及以下的所有等级。
+
+**POST /api/lesson/select**
+
+- 请求：`{ "knowledge_point_id": str }`
+- 规则：知识点必须属于 `users.level`，否则 `409 LEVEL_MISMATCH`；切换后清空 `progress.last_question_id`。
+- 响应：`{ "ok": true, "knowledge_point": {...} }`
+
+**POST /api/lesson/switch-level**
+
+- 请求：`{ "level": "L1"|"L2"|"L3" }`
+- 规则：只能切到 `max_level` 以内，越级 `409 LEVEL_LOCKED`；切换后 `users.level` 改变，当前知识点落到该级第一个。
+- 响应：`{ "ok": true, "level", "max_level", "knowledge_point": {...} }`
+
+### 4.12 能力测试（v1.7）
+
+**GET /api/level-test/status**
+
+- 响应：`{ "level", "next_level", "required_sets", "gate_ready", "can_test", "attempt_count", "last_result": { "score", "total", "passed", "at" }|null }`
+
+**POST /api/level-test/start**
+
+- 前置：门槛未达成 `409 GATE_NOT_READY`；已是最高级 `409 MAX_LEVEL`；本级题库不足 10 题 `409 NOT_ENOUGH_QUESTIONS`。
+- 规则：从本级题库**随机抽 10 题**，排除 `pronunciation`；会话存进程内 `_sessions`（单 worker 限制同 4.2）。
+- 响应：`{ "question": { "id", "question_type", "stem", "options" }, "index": 1 }`
+
+**POST /api/level-test/answer**
+
+- 请求：`{ "question_id": str, "answer": str }`
+- 响应：`{ "is_finished": bool, "score": int, "total": 10, "passed": bool|null, "next_level": str|null }`
+- 规则：
+  - 答满 10 题结算；**对 8 题及以上为通过**。
+  - 通过时把 `users.max_level` 上调到下一级，**但不改 `users.level`**——由用户在 `/api/level-test/choose` 决定升级还是留级（D-20）。
+  - 结果写 `level_tests`（`score`/`total`/`passed`）。
+
+**GET /api/level-test/next**
+
+- 响应：`{ "question": {...}, "index": int }`；未开始 `409 TEST_NOT_STARTED`，已结束 `409 TEST_FINISHED`。
+
+**POST /api/level-test/choose**
+
+- 请求：`{ "go_next": bool }`
+- 规则：`go_next=true` 且已解锁时，`users.level` 升到下一级、当前知识点落到该级第一个；`go_next=false` 留在原级。未通过就 `go_next=true` → `409 NOT_UNLOCKED`。
+- 响应：`{ "level", "max_level", "knowledge_point"|null }`
+
+### 4.13 词典（v1.7）
+
+**GET /api/words**
+
+- 查询参数：`?q=&offset=0&limit=30`（`limit` 上限 100）。
+- 范围：**只查当前等级** `users.level` 的词。
+- 排序：**未学优先**（该词对应题目没答对过），同组内按 `order_index`（教材册序）。
+- 搜索：`q` 同时匹配英文单词（大小写不敏感）与中文释义/音标；空 `q` 返回全部。
+- 响应：`{ "level", "total", "items": [ { "id", "word", "phonetic", "level", "grade", "is_phrase", "senses": [{"text","source"}], "definition_en", "learned", "has_wrong" } ], "has_more" }`
+- 口径：
+  - `learned`：该词对应题目**至少答对过一次**（D-22）。
+  - `has_wrong`：该词对应题目进过错题本，不论是否已掌握。
+  - 词与题目的对应：拼写/跟读取 `questions.answer`；选择题取正确选项（`options[answer]`）的文本；字母题不参与。
+  - `definition_en` **只对 L3 返回**，其余等级为 `null`。
+
 ---
 
 ## 5. 前端页面与组件
@@ -430,12 +568,17 @@ CREATE TABLE push_subscriptions (
 
 | 路径 | 页面 | 守卫 |
 |---|---|---|
-| `/` | 重定向：未登录 → `/login`；已登录且 `has_tested=false` → `/test`；否则 → `/home` | 无 |
+| `/` | 重定向到 `/home`，再由守卫按登录/水平测试状态分流 | 无 |
 | `/login` | 登录页 | 无 |
 | `/register` | 注册页 | 无 |
-| `/home` | 首页（任务、连续、徽章入口） | 需登录 |
-| `/test` | 水平测试页（**整页，非弹窗**） | 需登录且 `has_tested=false`；已测 → 重定向 `/home` |
-| `/play` | 答题页 | 需登录，`has_tested=true` |
+| `/home` | 首页（今日课程、能力测试、等级切换、错题/词典/徽章/报告入口） | 需登录 |
+| `/test` | 初次水平测试页（**整页，非弹窗**） | 需登录且 `has_tested=false`；已测 → 重定向 `/home` |
+| `/modules` | 知识点（模块）列表，显示套进度与门槛 | 需登录 |
+| `/play` | 答题页（按套出题） | 需登录，`has_tested=true` |
+| `/level-test` | 本级能力测试 | 需登录 |
+| `/result` | 一套学完后的结算页 | 需登录 |
+| `/practice` | 错题练习 | 需登录 |
+| `/words` | 词典 | 需登录 |
 | `/wrong` | 错题本 | 需登录 |
 | `/achievements` | 徽章墙 | 需登录 |
 | `/report` | 家长报告 | 需登录 |
@@ -457,6 +600,12 @@ CREATE TABLE push_subscriptions (
 | `AchievementWall.vue` | 徽章墙 |
 | `WrongList.vue` | 错题表格 |
 | `ReportCharts.vue` | ECharts 柱状图/折线图 |
+| `ModulesView.vue` | 知识点列表：套进度、门槛状态、进入学习（v1.7） |
+| `LevelTestView.vue` | 能力测试：开始、答题、结果、选择升级/留级（v1.7） |
+| `ResultView.vue` | 一套完成后的结算页（v1.7） |
+| `PracticeView.vue` | 错题练习：出题、判题、解析（v1.6） |
+| `WordsView.vue` | 词典：搜索、滚动加载、默认 2 条义项+展开、状态标签、L3 英文释义（v1.7） |
+| `SpeakButton.vue` | 英文点读按钮，所有英文选项/单词可点（v1.6） |
 
 **前端约束（v1.2 新增）：**
 
@@ -465,6 +614,9 @@ CREATE TABLE push_subscriptions (
 - **通知权限必须在用户点击时请求**，不得在 `/home` 加载时自动调用（浏览器会静默拒绝）。
 - **幂等键**：每次进入一题时生成 UUID 作为 `idempotency_key`，提交失败重试复用同一值。
 - **提交按钮防抖**：请求发出后禁用，避免重复提交（幂等键是兜底，防抖是一线）。
+- **按套出题（v1.7）**：`/play` 用 `/question/next` 返回的 `set_no/set_total/set_done` 显示「第 X / Y 题」；一套完成（`progress_advanced=true`）跳 `/result`；模块全部学完时后端返回 `409 KNOWLEDGE_POINT_FINISHED`，前端提示后回 `/modules`。
+- **答错展示义项（v1.7，D-23）**：答错后作答组件置灰、**不自动跳**，用响应里的 `word` 渲染「正确答案 + 音标 + 全部义项（L3 加英文）」，点「下一题」才继续；答对保持 250ms 后自动跳；**不自动朗读**（只提供手动点读）。
+- **词典页（v1.7）**：进入 `/words` 先拉 30 条，滚动到底自动加载，搜索 300ms 防抖；只显示当前等级的词。
 
 ### 5.3 Pinia Store
 
@@ -498,27 +650,30 @@ CREATE TABLE push_subscriptions (
 - 结果写 `users.level`，`has_tested=true`。
 - **等级一经确定不再变化**（D-11）：学习过程不改变 `users.level`，也不提供重测入口。
 
-### 6.3 知识点完成判定
+### 6.3 套与知识点完成判定（v1.7 重写）
 
-- 当前知识点下，该用户**做过的不同题目数** ≥ 该知识点题目总数，判定完成（v1.5，D-15：对错都算）。
-- 实现：`SELECT COUNT(DISTINCT question_id) FROM attempts WHERE user_id = :uid AND question_id IN (该知识点全部题 id)`，与该知识点 `COUNT(*) FROM questions WHERE knowledge_point_id = :kid` 比较。
-- 完成后加入 `completed_knowledge_points`（**去重**），并按 6.10 推进。
-- **跟读题计入完成判定**（因为它们属于某个知识点的题目总数）。
-- v1.4 的"答错 5 次视为已练习"规则已随本次改动删除——现在做过一次就算学过，不再存在卡题问题。
-- **完成即推进，无需额外确认**（v1.3 定稿，方案 A）。
+**推进单位是「套」，不是知识点。**
+
+- 一个知识点下的题按 15 题一套切分（`questions.set_no`）。
+- **一套完成**：该套下的题，该用户**做过的不同题目数** ≥ 该套题目数（对错都算，排除 `practice`）。
+  - 实现：`SELECT COUNT(DISTINCT question_id) FROM attempts WHERE user_id = :uid AND question_id IN (该套全部题 id) AND question_type != 'practice'`，与该套题数比较。
+- 一套完成即写入 `set_progress`（唯一约束兜底，重复不新增），同时把当日 `daily_tasks.is_completed` 置 `true`。
+- **知识点达标**：该知识点已完成套数 ≥ **3**（`SETS_REQUIRED`）。达标时才把知识点 id 追加进 `progress.completed_knowledge_points`（去重）。
+- **跟读题计入套完成**（它属于某个套的题目）。
+- **不自动推进知识点**：当前套答完自动进入当前知识点的下一套；该知识点全部套答完后 `/question/next` 返回 `409 KNOWLEDGE_POINT_FINISHED`，由孩子到 `/modules` 选下一个模块。
 
 ### 6.4 每日任务
 
-**任务定义（v1.3 定稿，方案 A）：当天的任务就是"学完当前知识点"。**
+**任务定义（v1.7）：当天的任务是「完成一套（15 题）」。**
 
-- 完成条件：当前知识点下，该用户**做过的不同题目数** ≥ 该知识点题目总数（即 6.3 的判定，对错都算）。
-- 知识点完成的那一刻，`daily_tasks.is_completed` 置 `true`，并同时推进到下一个知识点。
-- **不存在"答对 10 题"这个固定目标**。v1.1/v1.2 的 `target_count = 10` 已删除，改为动态值（见 4.4）。
-- 未学完时：`is_completed` 保持 `false`，`current_knowledge_point_id` 不变，孩子继续把该知识点剩下的题做完（4.3 只出没做过的题）。
+- 完成条件：当前套的每道题都作答过（对错都算，排除 `practice`）——即 6.3 的"一套完成"。
+- 一套完成的那一刻，`daily_tasks.is_completed` 置 `true`；当天再完成新的一套不改变该字段（不回退）。
+- **不存在"答对 10 题"这个固定目标**；`target_count` 表示当前套还剩多少题没做（见 4.4）。
+- 未完成时：`is_completed` 保持 `false`，下一次出题继续在当前套内取没做过的题（4.3 不会重复出答过的题）。
 - **`daily_tasks` 行由每次答题时懒创建**（`ON CONFLICT (user_id, task_date) DO NOTHING`），不在注册时预建。
 - **时区（v1.2 修复 A7）**：所有"今天"的判定必须显式写成 `(created_at AT TIME ZONE :tz)::date`，`:tz` 取 `APP_TIMEZONE`。**禁止依赖数据库 session 时区**，否则 UTC 服务器上早 8 点前的答题会被算到前一天。
-- **跨天行为**：一天没学完的知识点，第二天继续，不重置、不回退。
-- **同一天学完多个知识点**：允许。`is_completed` 在第一个知识点完成时置 `true`，之后继续推进，该字段不再变化。
+- **跨天行为**：一天没学完的一套，第二天继续，不重置、不回退。
+- **同一天完成多套**：允许。`is_completed` 在第一套完成时置 `true`，之后不再变化。
 
 ### 6.5 连续学习
 
@@ -545,19 +700,19 @@ CREATE TABLE push_subscriptions (
 
 - `streak`：比较 `streaks.current_streak`。
 - `answer_correct`：`COUNT(*) FROM attempts WHERE user_id = :uid AND is_correct = true`（含跟读与重复）。
-- `complete_kp`：动态查 `knowledge_points WHERE level='L1' ORDER BY sort_order LIMIT 1` 得到 id，判断该 id 是否在 `progress.completed_knowledge_points` 中。**不得硬编码 UUID。**
-- 检查时机：`answer/submit` 与 `pronunciation/result` 共用的 `after_attempt()` 内（知识点完成事件也在该函数中处理）。
+- `complete_kp`：动态查 `knowledge_points WHERE level='L1' AND counts_for_gate = true ORDER BY sort_order LIMIT 1` 得到 id（v1.7：字母表不计门槛，所以取「基础问候词」），判断该 id 是否在 `progress.completed_knowledge_points` 中。**不得硬编码 UUID。**
+- 检查时机：`answer/submit`、`pronunciation/result`、`practice/result` 共用的 `apply_attempt()` 内（套完成事件也在该函数中处理）。
 - 写入用 `ON CONFLICT (user_id, badge_id) DO NOTHING`。
 
-### 6.7 错题处理（v1.5 重写）
+### 6.7 错题处理（v1.5 重写，v1.6 补练习入口）
 
 **主流程不再复现错题。** 一道题在知识点内被作答一次后，无论对错都不再出现在 `/question/next` 里；答错的只写入 `wrong_questions`。
 
-- 写入时机：`answer/submit` 与 `pronunciation/result` 共用 `after_attempt()`。
+- 写入时机：`answer/submit`、`pronunciation/result`、`practice/result` 共用的 `apply_attempt()`。
 - 答错：`error_count += 1`，`consecutive_correct = 0`。
-- 答对且已在错题本：`consecutive_correct += 1`（本轮没有入口能触发，保留给 v2 的错题练习）。
-- `GET /wrong-questions` 默认只列 `consecutive_correct < 2` 的题；`include_mastered=true` 返回全部；`scope=current|all`，前端默认 `all`。
-- **v2 计划**：错题本增加"练习"入口，从错题本直接出题，答对 2 次视为掌握并移出默认列表。本期只做收集与展示。
+- 答对且已在错题本：`consecutive_correct += 1`；**连续答对 2 次（`MASTERY_STREAK`）视为掌握**，移出默认错题列表。
+- `GET /wrong-questions` 默认只列 `consecutive_correct < 2` 的题；`include_mastered=true` 返回全部；`scope=current|all`，前端默认 `all`，可按 `knowledge_point_id` 筛选。
+- **错题练习（v1.6）已实现**：入口在 `/wrong` 的「开始练习错题」，走 `/api/practice/*`（见 4.10）；练习答对 2 次即掌握，不影响学习进度。
 
 ### 6.8 听力题
 
@@ -570,15 +725,50 @@ CREATE TABLE push_subscriptions (
 - `question_type = 'pronunciation'` 的题**归属独立知识点**（D-02），该知识点的 `question_type` 同样为 `pronunciation`。
 - 题目结构：`stem` 与 `answer` 均为目标**单词**（本期不做句子），`options` 为 `NULL`。
 - 流程：请求麦克风权限 → `SpeechRecognition` 识别 → 与 `answer` 做 `strip().lower()` 比较，或编辑距离 ≤ 1 判对 → 提交 `/pronunciation/result`。
-- 结果写入 `attempts`，并走 `after_attempt()`。
+- 结果写入 `attempts`，并走 `apply_attempt()`。
 - 全前端比对是**明确例外**，原因与风险见 4.8。
 
-### 6.10 知识点与等级边界（v1.2 新增）
+### 6.10 知识点与等级边界（v1.7 重写）
 
-- 完成当前知识点后，推进到同等级下一个 `sort_order` 的知识点。
-- **同等级无下一个知识点时，停留在最后一个，不跨级**（D-06）。
-- `users.level` 终身不变，除非重新走水平测试（本期不提供重测入口）。
-- 因此 L1 用户学完最后一个 L1 知识点后，会持续在该知识点上出题。**这是已知的产品边界，不是缺陷**；若需改变，另立需求。
+- **不自动推进知识点**：当前套答完自动进入同一知识点的下一套；该知识点全部套答完后，出题接口返回 `409 KNOWLEDGE_POINT_FINISHED`，不会静默换模块。
+- 换模块由孩子在 `/modules` 里主动选择（`POST /api/lesson/select`）。
+- `users.level` 只由水平测试（初次）与能力测试后的 `/level-test/choose`（升级或回访切级）改变；学习过程本身不改等级。
+- `users.max_level` 是能力测试解锁的上限；`/api/lesson/switch-level` 只能切到该等级以内。
+- 因此学完一个模块不会自动跑到下一个等级，也不会跨级出题。**这是产品边界，不是缺陷**；若需改变，另立需求。
+
+### 6.11 升级门槛（v1.7）
+
+- 本级每个 `counts_for_gate=true` 的知识点都要 **完成 ≥ 3 套**，才 `gate_ready=true`。
+- `counts_for_gate=false` 的知识点（L1 字母表、L3 听力理解）不参与门槛判定，但可以正常学习、正常记 `set_progress`。
+- 门槛状态由 `GET /api/lesson/overview` 与 `GET /api/level-test/status` 返回。
+
+### 6.12 能力测试与等级回访（v1.7）
+
+- **入口**：`/level-test`。门槛未达成时按钮置灰，接口返回 `409 GATE_NOT_READY`。
+- **形式**：本级题库随机抽 10 题（排除跟读），一题一题答。
+- **通过线**：对 **8 题**及以上通过。
+- **通过后**：`users.max_level` 上调到下一级，**`users.level` 不变**；结果页让用户选「升级」或「留在本级」。
+- **升级**：`POST /api/level-test/choose {go_next:true}` → `users.level` 变为下一级，当前知识点落到该级第一个。
+- **留级**：`{go_next:false}` → 留在原级，仍可随时用 `/api/lesson/switch-level` 切到已解锁的等级。
+- **回访**：`POST /api/lesson/switch-level` 可切到 `max_level` 以内任意等级；越级返回 `409 LEVEL_LOCKED`。
+- 每次测试结果写 `level_tests`，可重复测（每次都要重新达标），历史保留。
+
+### 6.13 词典与义项（v1.7）
+
+- **数据来源**：`words` 表由 `backend/import_dictionary.py` 生成，输入是 `data/build/words.json`（词表）、`data/build/word_senses.json`（ECDICT 释义）、`data/sources/pep-words/*.json`（课本义）与 `data/sense_cleanup.json`（人工清洗清单）。
+- **课本义**：取 pep 词表（L1/L2 用小学册、L3 用初中册），做机械清洗（去语法注记、尾部标点、相邻重复、`um`/`num` 残字、统一分隔符）后置顶，标 `source=textbook`。**每个词的第一条必须是课本义。**
+- **词典义**：ECDICT 部分按逗号拆项，删领域标签、俚语脏话、技术义、与课本义重复项；每行最多留 2 项、每词最多留 3 行。
+- **人工清洗**：`data/sense_cleanup.json` 按等级分桶，命中即整词覆盖；`textbook_fixes` 记录课本义纠错。洗过一批就跑一次 `import_dictionary.py`，可重复执行（先删后插）。
+- **展示规则**：只显示当前等级；未学优先 → 教材册序；每条默认 2 条义项、可展开全部；英文释义只给 L3；「已学」= 该词对应题目答对过至少一次，「有错题」= 进过错题本。
+
+### 6.14 答错展示义项（v1.7）
+
+- **触发**：`/play` 答题页答错（含跟读判错）。
+- **内容**：正确答案、音标、该词全部义项（第一条标「课本」），L3 再显示英文释义。
+- **行为**：停住不自动跳，点「下一题」才继续；不自动朗读（只提供手动点读）；不强制停留（随时可点返回）。
+- **答对**：保持自动跳（约 250ms）。
+- **数据来源**：`/api/answer/submit` 与 `/api/pronunciation/result` 的 `word` 字段（见 4.3）。
+- **边界**：字母题查不到单词，只显示 `answer_text`；查不到词时面板降级为只显示正确答案。
 
 ---
 
@@ -588,19 +778,27 @@ CREATE TABLE push_subscriptions (
 
 **知识点与题目：**
 
-| 等级 | 知识点 | question_type | sort_order | 题量 |
-|---|---|---|---|---|
-| L1 | 字母表 | `letter` | 1 | ≥ 15 |
-| L1 | 基础问候词 | `word` | 2 | ≥ 15 |
-| L2 | 常用单词 | `word` | 1 | ≥ 15 |
-| L2 | 简单拼写 | `spelling` | 2 | ≥ 15 |
-| L2 | 单词跟读 | `pronunciation` | 3 | ≥ 15（v1.2 新增知识点） |
-| L3 | 听力理解 | `listening` | 1 | ≥ 15 |
-| L3 | 拼写进阶 | `spelling` | 2 | ≥ 15 |
+| 等级 | 知识点 | question_type | sort_order | 计入升级门槛 | 套数 | 题量（当前值） |
+|---|---|---|---|---|---|---|
+| L1 | 字母表 | `letter` | 1 | **否** | 1 | 15 |
+| L1 | 基础问候词 | `word` | 2 | 是 | 22 | 330 |
+| L2 | 常用单词 | `word` | 1 | 是 | 32 | 480 |
+| L2 | 简单拼写 | `spelling` | 2 | 是 | 27 | 405 |
+| L2 | 单词跟读 | `pronunciation` | 3 | 是 | 29 | 435 |
+| L3 | 听力理解 | `listening` | 1 | **否** | 1 | 15 |
+| L3 | 拼写进阶 | `spelling` | 2 | 是 | 95 | 1425 |
 
-> **v1.4 说明（D-13）**：题量从 ≥5 提到 **≥15**。原因：每日任务已定义为"学完当前知识点"，若一个知识点只有 5 题，孩子 3 分钟就能完成当天任务并自动进入下一个知识点，"每日任务"形同虚设。15 题约对应 10–15 分钟，是"一天一个知识点"的合理节奏。
+合计 **3105 题 / 207 套**，每套 15 题。
+
+> **v1.7 说明**：第 1 套是手写题（`seed.py`，含解析）；第 2 套起由 `seed_words.py` 按 15 个词切分生成（题干用词表释义、选项用同套其它单词）。字母表与听力理解题量固定、凑不满 3 套，`counts_for_gate=false`，不影响能力测试解锁（D-19）。
 >
-> 总题量约 105 题，全部需人工编写。这是本项目**最大的一块内容工作量**，不是代码工作量，需提前知悉。
+> 内容量已从 v1.4 规划的 105 题扩到 3105 题，全部来自现成数据源生成 + 人工抽检，不由 agent 凭空编写。
+
+**词典数据（v1.7 新增）：**
+
+- `words` 表 **1972 词**：L1 319 / L2 493 / L3 1160，由 `backend/import_dictionary.py` 生成。
+- 输入：`data/build/words.json` + `data/build/word_senses.json`（ECDICT）+ `data/sources/pep-words/*.json`（课本义）+ `data/sense_cleanup.json`（人工清洗清单）。
+- 义项口径见 6.13；脚本**可重复执行**（先 `DELETE` 再批量插入，业务表无外键引用 `words`）。
 
 **其他要求：**
 
@@ -609,7 +807,7 @@ CREATE TABLE push_subscriptions (
 - `listening` 题的 `stem` 为英文，且与朗读内容一致。
 - `pronunciation` 题的 `stem` 与 `answer` 均为单词，`options` 为 `NULL`。
 - 预置 4 个徽章（见 6.6）。
-- **每个知识点的题量必须 ≥ 该知识点完成判定所需的最小题数**，且不得出现 0 题知识点。
+- **每个知识点的题量必须 ≥ 该知识点完成判定所需的最小题数**：计入升级门槛的知识点至少需要 **3 套（45 题）**，否则永远达不成门槛；不计门槛的至少 1 套（15 题）。不得出现 0 题知识点。
 - 种子脚本运行后必须校验：`knowledge_points.question_type` 与其下 `questions.question_type` 全一致，不一致则报错退出。
 
 ---
@@ -635,11 +833,11 @@ CREATE TABLE push_subscriptions (
 1. 注册、登录、JWT 鉴权可用；库中密码为哈希；`Tom` 与 `tom` 视为同一账号。
 2. 初次登录进入 `/test`，10 题内完成并写入 L1/L2/L3；已测用户再访问 `/test` 返回 409。
 3. `GET /question/next` 按当前知识点返回题，题型与知识点绑定一致。
-4. 答错进入 `wrong_questions`，后续优先出现；连续答对 2 次后退出默认列表。
-5. 知识点完成后 `current_knowledge_point_id` 推进，`daily_tasks.is_completed` 同步置 `true`，重新登录不回到起点。
-6. 知识点未学完时，`daily_tasks.is_completed` 保持 `false`、`current_knowledge_point_id` 不变；但当天只要答对 ≥1 题，`streaks` 已更新。
+4. 答错进入 `wrong_questions`，**不回主流程**；在错题本里连续答对 2 次后退出默认列表（v1.5）。
+5. 一套完成时写入 `set_progress`、`daily_tasks.is_completed` 同步置 `true`，重新登录不回到起点（`progress.last_question_id` 会恢复未答完的那道题）。
+6. 一套未做完时，`daily_tasks.is_completed` 保持 `false`；但当天只要答对 ≥1 题，`streaks` 已更新。
 7. 徽章条件满足时写入 `achievements`，不重复。
-8. `/report` 返回等级、完成知识点数、近 7 天完成天数、每日答题数、错题列表。
+8. `/report` 返回等级、达标模块数、近 7 天完成套数的天数、每日答题数、错题列表。
 9. 听力题可朗读；跟读题可识别并记录结果。
 10. 推送订阅可保存，定时任务可发送（浏览器支持范围内）。
 11. `pytest` 覆盖注册、登录、测试分级、答题推进、错题、每日任务、徽章。
@@ -670,23 +868,38 @@ CREATE TABLE push_subscriptions (
 
 28. 当天只答对 1 题、知识点未学完时，`streaks.current_streak` 仍然 +1。
 29. 当天一道题都没答对时 19:00 能收到提醒；答对过 1 题但知识点没学完时**不再**收到提醒。
-30. `GET /api/progress` 的 `target_count` 随当前知识点剩余题数变化，**不等于固定 10**。
-31. 同一知识点跨两天学完时，`is_completed` 只在第二天那一次置 `true`（第一个知识点学完后继续推进不重置该字段）。
+30. `GET /api/progress` 的 `target_count` 随**当前套**剩余题数变化，**不等于固定 10**。
+31. 同一套跨两天完成时，`is_completed` 只在第二天那一次置 `true`（当天完成后继续做新的一套不重置该字段）。
 
 **v1.5 新增项（主流程单遍制）：**
 
 36. 一道题答错后，主流程不再返回同一题；该题出现在错题本里。
-37. 一个知识点内 15 道题全部答错，知识点仍然判定完成并推进（不会卡死）。
+37. 一套 15 题全部答错，该套仍然判定完成并进入下一套（不会卡死）。
 38. 答错后 `target_count` 同样递减（按"做过"计数，不按"答对"计数）。
-39. 水平测试出过的题在正常够用的情况下不会在学习阶段重复出现；当该知识点只剩测试题时允许出现，以保证能凑满题目数。
+39. 水平测试出过的题在正常够用的情况下不会在学习阶段重复出现；当当前套只剩测试题时允许出现，以保证能凑满 15 题。
 40. 未答完就离开答题页，下次进入 `/play` 返回同一道题（`progress.last_question_id`）。
 
 **v1.4 新增项：**
 
-32. 某题累计答错 5 次后，该知识点可以正常完成并推进；该题仍出现在错题本默认列表（D-12）。
+32. 【已废止】v1.5 删除了"某题累计答错 5 次视为已练习"的规则（V5-6），现在一套内做过一次即算学过。
 33. 当前知识点为「单词跟读」时，`/api/question/next` 返回 409 `USE_PRONUNCIATION_ENDPOINT`，前端改调 `/api/pronunciation/next` 后能正常出题并判分（D-14）。
 34. 当前知识点不是跟读时，`/api/pronunciation/next` 返回 409 `WRONG_ENDPOINT`（D-14）。
 35. 每个知识点的 `questions` 数量 ≥ 15，且不存在 0 题知识点（D-13）。
+
+**v1.7 新增项（按套推进 / 能力测试 / 词典 / 答错义项）：**
+
+45. 一套 15 题全部作答过（对错不论）才算完成，完成写入 `set_progress`，重复完成不新增行。
+46. 同一知识点完成 ≥3 套算达标；本级所有计门槛知识点达标后 `/api/lesson/overview` 的 `gate_ready=true`。
+47. 字母表、听力理解 `counts_for_gate=false`，它们没达标也不影响能力测试解锁。
+48. 能力测试 10 题对 8 过；通过后 `max_level` 提升、`level` 不变；`/level-test/choose` 才决定升级或留级。
+49. `/lesson/switch-level` 只能切到 `max_level` 以内，越级返回 409 `LEVEL_LOCKED`。
+50. 模块全部套学完后 `/question/next` 返回 409 `KNOWLEDGE_POINT_FINISHED`，不会静默换模块。
+51. `/api/words` 只返回当前等级的词；`total` 等于该等级词数；分页不重叠、可翻全。
+52. 词典排序未学优先、同组按教材册序；搜索中英文都能命中；跨等级搜不到。
+53. 词表每条至少 1 条义项且**第一条是课本义**；L1/L2 的 `definition_en` 为 `null`，L3 有值。
+54. 「已学」= 该词对应题目答对过至少一次；「有错题」= 进过错题本；已学的词排在未学之后。
+55. 答错时 `/answer/submit` 返回 `word`（单词/音标/全部义项/L3 英文）与 `answer_text`；字母题 `word=null` 但 `answer_text` 有值；幂等重放同样带这些字段。
+56. 答题页答错停住并展示义项，点「下一题」才继续；答对自动跳下一题；答错后不能重复提交。
 
 ---
 
@@ -711,6 +924,8 @@ CREATE TABLE push_subscriptions (
 ## 11. 已决事项（原 Q1，v1.3 定稿）
 
 **决议：进度推进采用「方案 A 任务驱动」。**
+
+> **v1.7 说明**：本节是历史决策记录。其中"当天任务 = 学完当前知识点""任务完成条件 = 答对的不同题目数 ≥ 题目总数""推进时机 = 知识点完成的那一刻"三行已被 **6.3 / 6.4** 取代——现在的推进单位是「套」，当天任务 = 完成一套（15 题，对错都算）。其余（连续学习、提醒口径）仍然有效。
 
 | 项 | 定稿 |
 |---|---|
@@ -833,4 +1048,27 @@ CREATE TABLE push_subscriptions (
 41. 错题本显示"待练习 / 已掌握"数量，可按知识点筛选。
 42. 练习页答错展示解析；同一题连续答对 2 次后从默认列表移出。
 43. 练习不改变 `current_knowledge_point_id`、不推进知识点、不影响每日任务完成态。
-44. 答题页显示"第 X / Y 题"与进度条；知识点完成后跳转结算页。
+44. 答题页显示"第 X / Y 题"与进度条；一套完成后跳转结算页。
+
+### 12.6 v1.7（与实现同步）
+
+> 本版只补齐规格与实现之间的差距，**不改已实现行为**（除 6.x 中被明确重写的口径）。
+
+| # | 位置 | 变更 |
+|---|---|---|
+| V7-1 | 0 | 新增决策 D-17～D-24（按套推进、门槛、不计门槛、能力测试、等级回访、词典、答错义项、义项来源） |
+| V7-2 | 3 | 补 `users.max_level`、`knowledge_points.counts_for_gate`、`questions.explanation`/`set_no`、`progress.last_question_id`/`test_seen_question_ids`；新增 `set_progress`、`level_tests`、`words` 三张表 |
+| V7-3 | 3 | 补 v1.7 字段口径（套号、解析、max_level、恢复指针、practice 不计进度、senses 结构） |
+| V7-4 | 4.3 | `/question/next` 增加 `exclude_id` 参数与 `set_no/set_total/set_done` 响应；`/answer/submit` 增加 `answer_text`、`word`（答错展示义项），`progress_advanced` 语义改为"完成一套" |
+| V7-5 | 4.4 | `/progress` 增加 `max_level/kp_total/kp_done/set_no/completed_sets/total_sets`；`target_count` 改为"当前套剩余题数" |
+| V7-6 | 4.11～4.13（新增） | 学习模块三个接口、能力测试五个接口、词典接口 |
+| V7-7 | 5.1 / 5.2 | 补 `/modules`、`/level-test`、`/result`、`/practice`、`/words` 路由与对应组件；补 v1.7 前端约束 |
+| V7-8 | 6.3 / 6.4 | 完成判定从"知识点"改为"套"，每日任务定义为"完成一套" |
+| V7-9 | 6.7 | 错题练习从"v2 计划"改为已实现（4.10） |
+| V7-10 | 6.10 | 改为"不自动推进知识点，模块由用户选择" |
+| V7-11 | 6.11～6.14（新增） | 升级门槛、能力测试与等级回访、词典与义项、答错展示义项 |
+| V7-12 | 7 | 种子数据表补 `counts_for_gate`、真实套数/题量（3105 题 / 207 套）、词典 1972 词 |
+| V7-13 | 9 | 修正验收 4/5/6/30/31/32/37/39，新增 45–56 |
+| V7-14 | 全文 | 统一 `after_attempt()` 的函数名为实现中的 `apply_attempt()` |
+
+**v1.7 验收：** 见第 9 节 45–56。
