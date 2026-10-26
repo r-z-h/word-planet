@@ -16,6 +16,7 @@ from ..services.lesson import (
     mark_set_complete,
     resolve_current_kp,
 )
+from ..services.words import answer_text, word_payload
 
 router = APIRouter(prefix="/api", tags=["question"])
 
@@ -186,6 +187,8 @@ def submit_answer(
             current_knowledge_point=_kp_payload(kp),
             new_badges=[],
             duplicated=True,
+            answer_text=answer_text(question) if question else None,
+            word=word_payload(db, question) if question else None,
         )
 
     try:
@@ -225,4 +228,6 @@ def submit_answer(
         current_knowledge_point=_kp_payload(result["current_knowledge_point"]),
         new_badges=result["new_badges"],
         duplicated=False,
+        answer_text=answer_text(question),
+        word=word_payload(db, question),
     )

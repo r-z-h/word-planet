@@ -15,6 +15,7 @@ from ..schemas import (
 )
 from ..services.attempt_flow import apply_attempt
 from ..services.lesson import current_set_no, is_set_complete, mark_set_complete
+from ..services.words import answer_text, word_payload
 
 router = APIRouter(prefix="/api/pronunciation", tags=["pronunciation"])
 
@@ -105,8 +106,14 @@ def submit_pronunciation(
         )
     ).scalar_one_or_none()
     if existing is not None:
+        question = db.get(Question, existing.question_id)
         return PronunciationResultResponse(
-            recorded=True, progress_advanced=False, new_badges=[], duplicated=True
+            recorded=True,
+            progress_advanced=False,
+            new_badges=[],
+            duplicated=True,
+            answer_text=answer_text(question) if question else None,
+            word=word_payload(db, question) if question else None,
         )
 
     try:
@@ -145,4 +152,6 @@ def submit_pronunciation(
         progress_advanced=result["progress_advanced"],
         new_badges=result["new_badges"],
         duplicated=False,
+        answer_text=answer_text(question),
+        word=word_payload(db, question),
     )
