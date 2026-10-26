@@ -91,6 +91,20 @@ class KnowledgePointOut(BaseModel):
     question_type: str
 
 
+class WordSenseOut(BaseModel):
+    text: str
+    source: str
+
+
+class AnswerWordOut(BaseModel):
+    """答错时前端要展示的单词信息（正确答案 + 音标 + 全部义项）。"""
+
+    word: str
+    phonetic: str | None = None
+    senses: list[WordSenseOut] = []
+    definition_en: str | None = None
+
+
 class AnswerSubmitResponse(BaseModel):
     is_correct: bool
     correct_answer: str
@@ -98,6 +112,8 @@ class AnswerSubmitResponse(BaseModel):
     current_knowledge_point: KnowledgePointOut | None = None
     new_badges: list[str] = []
     duplicated: bool = False
+    answer_text: str | None = None
+    word: AnswerWordOut | None = None
 
 
 class TodayTaskOut(BaseModel):
@@ -190,6 +206,8 @@ class PronunciationResultResponse(BaseModel):
     progress_advanced: bool = False
     new_badges: list[str] = []
     duplicated: bool = False
+    answer_text: str | None = None
+    word: AnswerWordOut | None = None
 
 
 class PushSubscribeRequest(BaseModel):
@@ -293,3 +311,26 @@ class LevelTestChooseResponse(BaseModel):
     level: str
     max_level: str
     knowledge_point: KnowledgePointOut | None = None
+
+
+# ---------------- 词典 ----------------
+
+
+class WordItemOut(BaseModel):
+    id: str
+    word: str
+    phonetic: str | None = None
+    level: str
+    grade: str
+    is_phrase: bool
+    senses: list[WordSenseOut]
+    definition_en: str | None = None
+    learned: bool = False
+    has_wrong: bool = False
+
+
+class WordListResponse(BaseModel):
+    level: str
+    total: int
+    items: list[WordItemOut]
+    has_more: bool

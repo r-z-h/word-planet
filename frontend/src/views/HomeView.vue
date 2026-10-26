@@ -77,8 +77,9 @@
     </div>
 
     <div class="card">
-      <div style="display: flex; gap: 10px">
+      <div class="quick">
         <el-button style="flex: 1" @click="$router.push('/wrong')">📕 错题本</el-button>
+        <el-button style="flex: 1" @click="$router.push('/words')">📖 词典</el-button>
         <el-button style="flex: 1" @click="$router.push('/achievements')">🏅 徽章墙</el-button>
         <el-button style="flex: 1" @click="$router.push('/report')">📊 学习报告</el-button>
       </div>
@@ -203,5 +204,14 @@ function urlBase64ToUint8Array(base64String) {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.quick .el-button {
+  flex: 1 1 140px;
+  margin-left: 0;
 }
 </style>

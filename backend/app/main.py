@@ -17,6 +17,7 @@ from .routers import (
     question,
     report,
     test,
+    words,
     wrong,
 )
 
@@ -77,6 +78,7 @@ for router in (
     practice.router,
     lesson.router,
     level_test.router,
+    words.router,
 ):
     app.include_router(router)
 
