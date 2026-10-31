@@ -5,6 +5,8 @@ const routes = [
   { path: '/', redirect: '/home' },
   { path: '/login', component: () => import('../views/LoginView.vue') },
   { path: '/register', component: () => import('../views/RegisterView.vue') },
+  { path: '/terms', component: () => import('../views/TermsView.vue') },
+  { path: '/privacy', component: () => import('../views/PrivacyView.vue') },
   { path: '/home', component: () => import('../views/HomeView.vue') },
   { path: '/test', component: () => import('../views/TestView.vue') },
   { path: '/play', component: () => import('../views/PlayView.vue') },

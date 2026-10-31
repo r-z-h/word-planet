@@ -23,6 +23,10 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173,https://localhost:5173"
 
+    # 公网安全开关（本机开发默认关闭；生产 .env 打开）
+    require_captcha: bool = False
+    rate_limit_per_min: int = 0  # 0 = 关闭
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

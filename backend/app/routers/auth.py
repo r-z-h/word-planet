@@ -1,13 +1,15 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..config import settings
 from ..database import get_db
 from ..deps import get_current_user
 from ..models import Progress, User
 from ..schemas import (
+    CaptchaOut,
     ChangePasswordRequest,
     LoginRequest,
     LoginResponse,
@@ -22,8 +24,19 @@ from ..security import (
     normalize_account,
     verify_password,
 )
+from ..services.security_extra import make_captcha, rate_limit, verify_captcha
 
 router = APIRouter(prefix="/api", tags=["auth"])
+
+
+@router.get("/captcha", response_model=CaptchaOut)
+def captcha():
+    return make_captcha()
+
+
+@router.get("/security-config")
+def security_config():
+    return {"require_captcha": settings.require_captcha}
 
 
 def _check_password_bytes(raw: str) -> None:
@@ -32,7 +45,14 @@ def _check_password_bytes(raw: str) -> None:
 
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
-def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+def register(payload: RegisterRequest, request: Request, db: Session = Depends(get_db)):
+    rate_limit(request, "register")
+    verify_captcha(payload.captcha_token, payload.captcha_code)
+    if not payload.agreed_terms:
+        raise HTTPException(
+            status_code=422,
+            detail={"detail": "请先阅读并同意用户协议与隐私政策", "code": "TERMS_REQUIRED"},
+        )
     _check_password_bytes(payload.password)
     account = normalize_account(payload.account)
 
@@ -70,7 +90,9 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=LoginResponse)
-def login(payload: LoginRequest, db: Session = Depends(get_db)):
+def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    rate_limit(request, "login")
+    verify_captcha(payload.captcha_token, payload.captcha_code)
     account = normalize_account(payload.account)
     user = db.execute(select(User).where(User.account == account)).scalar_one_or_none()
     if user is None or not verify_password(payload.password, user.password_hash):

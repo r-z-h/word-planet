@@ -10,10 +10,24 @@ class RegisterRequest(BaseModel):
     account: str = Field(min_length=3, max_length=64)
     password: str = Field(min_length=6, max_length=72)
     nickname: str = Field(min_length=1, max_length=64)
+    agreed_terms: bool = True
+    captcha_token: str | None = None
+    captcha_code: str | None = None
 
 
 class LoginRequest(BaseModel):
     account: str
+    password: str
+    captcha_token: str | None = None
+    captcha_code: str | None = None
+
+
+class CaptchaOut(BaseModel):
+    token: str
+    question: str
+
+
+class DeleteAccountRequest(BaseModel):
     password: str
 
 

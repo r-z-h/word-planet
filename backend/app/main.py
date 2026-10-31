@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .routers import (
+    account,
     achievement,
     auth,
     lesson,
@@ -81,6 +82,7 @@ for router in (
     level_test.router,
     words.router,
     reward.router,
+    account.router,
 ):
     app.include_router(router)
 

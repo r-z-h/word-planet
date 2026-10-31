@@ -67,6 +67,10 @@
             <span>清除本机缓存 <em class="set-hint">只清本设备，不动服务器</em></span>
             <button class="wp2-btn small" @click="clearCache">清除</button>
           </div>
+          <div class="set-row">
+            <span>注销账号 <em class="set-hint">删除账号与全部数据，不可恢复</em></span>
+            <button class="wp2-btn small danger" @click="deleteAccount">注销</button>
+          </div>
 
           <div class="set-sec">关于</div>
           <div class="set-row"><span>版本</span><span class="wp2-muted">v{{ APP_VERSION }}</span></div>
@@ -515,6 +519,38 @@ async function clearCache() {
   }
   clearLocalCache()
   window.location.reload()
+}
+
+async function deleteAccount() {
+  let password = ''
+  try {
+    const res = await ElMessageBox.prompt(
+      '注销会删除账号和全部学习数据，且不可恢复。请输入密码确认：',
+      '注销账号',
+      {
+        confirmButtonText: '确认注销',
+        cancelButtonText: '取消',
+        inputType: 'password',
+        inputPlaceholder: '账号密码'
+      }
+    )
+    password = res.value || ''
+  } catch {
+    return
+  }
+  if (!password) {
+    ElMessage.warning('请输入密码')
+    return
+  }
+  try {
+    await http.post('/account/delete', { password })
+    ElMessage.success('账号已注销')
+    settingsOpen.value = false
+    user.logout()
+    router.replace('/login')
+  } catch (e) {
+    ElMessage.error(apiError(e))
+  }
 }
 
 function urlBase64ToUint8Array(base64String) {
