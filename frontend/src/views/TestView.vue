@@ -19,6 +19,10 @@
         :disabled="submitting"
         @submit="onAnswer"
       />
+      <div class="skip-row">
+        <el-button text :disabled="submitting" @click="skip">不会，跳过这题 →</el-button>
+        <span class="muted small">跳过按「答错」计，不影响后面继续测</span>
+      </div>
     </div>
 
     <div v-else class="card">
@@ -78,4 +82,15 @@ async function onAnswer(answer) {
     submitting.value = false
   }
 }
+
+function skip() {
+  if (submitting.value || !question.value) return
+  onAnswer('')
+}
 </script>
+
+<style scoped>
+.skip-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.skip-row .small { font-size: 11px; }
+</style>
+
