@@ -20,12 +20,6 @@
         <el-table-column label="已测" width="70">
           <template #default="{ row }">{{ row.has_tested ? '是' : '否' }}</template>
         </el-table-column>
-        <el-table-column label="管理员" width="80">
-          <template #default="{ row }">
-            <el-tag v-if="row.is_admin" type="warning" size="small" title="该账号拥有管理员权限，可进入管理员后台">管理员</el-tag>
-            <span v-else class="wp2-dim">—</span>
-          </template>
-        </el-table-column>
         <el-table-column label="锁定" width="90">
           <template #default="{ row }">
             <el-tag v-if="row.locked_remaining > 0" type="danger" size="small">
