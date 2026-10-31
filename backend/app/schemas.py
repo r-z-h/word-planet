@@ -51,6 +51,32 @@ class MeResponse(BaseModel):
     nickname: str
     level: str | None
     has_tested: bool
+    is_admin: bool = False
+
+
+class AdminUserItem(BaseModel):
+    id: str
+    account: str
+    nickname: str
+    level: str | None = None
+    max_level: str | None = None
+    has_tested: bool = False
+    is_admin: bool = False
+    created_at: datetime | None = None
+
+
+class AdminUsersResponse(BaseModel):
+    items: list[AdminUserItem]
+
+
+class AdminResetPasswordRequest(BaseModel):
+    account: str
+    new_password: str = Field(min_length=6, max_length=72)
+
+
+class AdminSetAdminRequest(BaseModel):
+    account: str
+    is_admin: bool
 
 
 class QuestionOut(BaseModel):

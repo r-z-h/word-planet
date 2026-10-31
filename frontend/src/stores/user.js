@@ -8,6 +8,7 @@ export const useUserStore = defineStore('user', {
     nickname: '',
     level: null,
     hasTested: false,
+    isAdmin: false,
     loaded: false
   }),
   actions: {
@@ -36,6 +37,7 @@ export const useUserStore = defineStore('user', {
       this.nickname = data.nickname
       this.level = data.level
       this.hasTested = data.has_tested
+      this.isAdmin = Boolean(data.is_admin)
       this.loaded = true
       return data
     },

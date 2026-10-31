@@ -114,6 +114,7 @@ def me(user: User = Depends(get_current_user)):
         nickname=user.nickname,
         level=user.level,
         has_tested=user.has_tested,
+        is_admin=bool(user.is_admin),
     )
 
 

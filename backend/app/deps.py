@@ -49,3 +49,11 @@ def require_tested(user: User = Depends(get_current_user)) -> User:
             status_code=409, detail={"detail": "尚未完成水平测试", "code": "NOT_TESTED"}
         )
     return user
+
+
+def require_admin(user: User = Depends(get_current_user)) -> User:
+    if not getattr(user, 'is_admin', False):
+        raise HTTPException(
+            status_code=403, detail={"detail": "需要管理员权限", "code": "NOT_ADMIN"}
+        )
+    return user

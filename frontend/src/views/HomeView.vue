@@ -72,6 +72,14 @@
             <button class="wp2-btn small danger" @click="deleteAccount">注销</button>
           </div>
 
+          <template v-if="user.isAdmin">
+            <div class="set-sec">管理</div>
+            <div class="set-row">
+              <span>管理员后台 <em class="set-hint">用户列表 / 重置密码 / 授权管理员</em></span>
+              <button class="wp2-btn small gold" @click="goAdmin">进入</button>
+            </div>
+          </template>
+
           <div class="set-sec">关于</div>
           <div class="set-row"><span>版本</span><span class="wp2-muted">v{{ APP_VERSION }}</span></div>
           <div class="about-line">录音只保存在本机内存、不上传服务器；关闭页面即消失。</div>
@@ -560,6 +568,11 @@ function urlBase64ToUint8Array(base64String) {
   const output = new Uint8Array(raw.length)
   for (let i = 0; i < raw.length; i += 1) output[i] = raw.charCodeAt(i)
   return output
+}
+
+function goAdmin() {
+  settingsOpen.value = false
+  router.push('/admin')
 }
 
 function logout() {

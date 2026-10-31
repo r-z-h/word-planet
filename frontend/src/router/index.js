@@ -7,6 +7,7 @@ const routes = [
   { path: '/register', component: () => import('../views/RegisterView.vue') },
   { path: '/terms', component: () => import('../views/TermsView.vue') },
   { path: '/privacy', component: () => import('../views/PrivacyView.vue') },
+  { path: '/admin', component: () => import('../views/AdminView.vue') },
   { path: '/home', component: () => import('../views/HomeView.vue') },
   { path: '/test', component: () => import('../views/TestView.vue') },
   { path: '/play', component: () => import('../views/PlayView.vue') },
