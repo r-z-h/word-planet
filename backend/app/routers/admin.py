@@ -1,12 +1,26 @@
 """管理员接口：用户列表 / 重置密码 / 授予或取消管理员。"""
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import require_admin
-from ..models import User
+from ..models import (
+    Achievement,
+    Attempt,
+    DailyTask,
+    FlowerExchange,
+    LevelTest,
+    PlanetMedal,
+    Progress,
+    PushSubscription,
+    QuestionFlower,
+    SetProgress,
+    Streak,
+    User,
+    WrongQuestion,
+)
 from ..schemas import (
     AdminAccountActionRequest,
     AdminResetPasswordRequest,
@@ -98,4 +112,40 @@ def admin_clear_lock(
 ):
     """解除该账号的登录/注册失败锁定（清空频率计数）。"""
     clear_lock_for_account(normalize_account(payload.account))
+    return OkResponse()
+
+
+@router.post("/delete-account", response_model=OkResponse)
+def admin_delete_account(
+    payload: AdminAccountActionRequest,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """删除指定账号及其全部数据（不能删除自己）。"""
+    account = normalize_account(payload.account)
+    user = db.execute(select(User).where(User.account == account)).scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=404, detail={"detail": "账号不存在", "code": "USER_NOT_FOUND"})
+    if user.id == admin.id:
+        raise HTTPException(status_code=422, detail={"detail": "不能删除自己的账号", "code": "CANNOT_DELETE_SELF"})
+
+    for model in (
+        Attempt,
+        WrongQuestion,
+        Achievement,
+        SetProgress,
+        QuestionFlower,
+        PlanetMedal,
+        FlowerExchange,
+        LevelTest,
+        DailyTask,
+        PushSubscription,
+        Streak,
+    ):
+        db.execute(delete(model).where(model.user_id == user.id))
+    db.execute(delete(Progress).where(Progress.user_id == user.id))
+    db.flush()
+    db.delete(user)
+    db.commit()
+    clear_lock_for_account(account)
     return OkResponse()

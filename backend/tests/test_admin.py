@@ -51,3 +51,20 @@ def test_admin_list_and_reset_and_grant(user_client):
     with SessionLocal() as db:
         u = db.execute(select(User).where(User.account == acc)).scalar_one()
         assert u.is_admin is True
+
+
+def test_admin_delete_account(user_client):
+    _set_admin(user_client.user_id, True)
+    acc = 'del_' + uuid.uuid4().hex[:6]
+    r = user_client.post(
+        '/api/register', json={'account': acc, 'password': 'abc123456', 'nickname': '待删'}
+    )
+    assert r.status_code == 201
+
+    r_self = user_client.post('/api/admin/delete-account', json={'account': user_client.account})
+    assert r_self.status_code == 422
+
+    r2 = user_client.post('/api/admin/delete-account', json={'account': acc})
+    assert r2.status_code == 200, r2.text
+    r3 = user_client.post('/api/login', json={'account': acc, 'password': 'abc123456'})
+    assert r3.status_code == 401

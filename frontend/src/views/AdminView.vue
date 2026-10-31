@@ -34,7 +34,7 @@
             <span v-else class="wp2-dim">—</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="430">
+        <el-table-column label="操作" width="520">
           <template #default="{ row }">
             <el-button size="small" @click="openReset(row)">重置密码</el-button>
             <el-button size="small" :type="row.is_admin ? 'info' : 'primary'" @click="toggleAdmin(row)">
@@ -42,6 +42,7 @@
             </el-button>
             <el-button size="small" type="success" @click="unlockLevel(row)">解锁等级</el-button>
             <el-button size="small" :disabled="row.locked_remaining <= 0" @click="clearLock(row)">解除锁定</el-button>
+            <el-button size="small" type="danger" @click="deleteAccount(row)">删除账号</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -157,6 +158,25 @@ async function clearLock(row) {
   try {
     await http.post('/admin/clear-lock', { account: row.account })
     ElMessage.success('已解除锁定')
+    await load()
+  } catch (e) {
+    ElMessage.error(apiError(e))
+  }
+}
+
+async function deleteAccount(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除账号「${row.account}」？该账号的全部学习数据会被永久删除，不可恢复。`,
+      '删除账号',
+      { confirmButtonText: '确认删除', cancelButtonText: '取消', type: 'error' }
+    )
+  } catch {
+    return
+  }
+  try {
+    await http.post('/admin/delete-account', { account: row.account })
+    ElMessage.success('账号已删除')
     await load()
   } catch (e) {
     ElMessage.error(apiError(e))
