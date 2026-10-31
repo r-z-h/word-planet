@@ -25,6 +25,18 @@
   background: var(--wp2-grad) !important;
 }
 
+/* 管理员页：内容铺开、宽度自适应，不再被 960px 限制挤出操作列 */
+.wp-dark.page.admin-page {
+  max-width: none !important;
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+}
+.wp-dark.page.admin-page .card {
+  width: 100%;
+  max-width: 1800px;
+  margin: 0 auto;
+}
+
 /* 标签配色（Element 默认是白底，深色下会刺眼） */
 .wp-dark .el-tag--info {
   background: rgba(159, 182, 255, 0.16) !important;

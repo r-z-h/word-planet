@@ -1,5 +1,5 @@
 <template>
-  <div class="wp-dark page">
+  <div class="wp-dark page admin-page">
     <StarField />
     <div class="card">
       <div class="head">
@@ -22,7 +22,7 @@
         </el-table-column>
         <el-table-column label="管理员" width="80">
           <template #default="{ row }">
-            <el-tag v-if="row.is_admin" type="warning" size="small">管理员</el-tag>
+            <el-tag v-if="row.is_admin" type="warning" size="small" title="该账号拥有管理员权限，可进入管理员后台">管理员</el-tag>
             <span v-else class="wp2-dim">—</span>
           </template>
         </el-table-column>
