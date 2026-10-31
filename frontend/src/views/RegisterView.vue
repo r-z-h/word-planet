@@ -40,20 +40,19 @@
       <p class="cap-tip">为防止批量注册，请先回答：</p>
       <div class="cap-row">
         <span class="cap-q">{{ captchaQuestion }}</span>
-        <el-input v-model="captchaCode" placeholder="答案" />
+        <el-input v-model="captchaCode" placeholder="答案" @keyup.enter="tryAutoSubmit" />
         <el-button text @click="loadCaptcha">换一题</el-button>
       </div>
       <p v-if="captchaError" class="cap-err">{{ captchaError }}</p>
       <div class="cap-foot">
         <button class="wp2-btn" @click="captchaOpen = false">取消</button>
-        <button class="wp2-btn gold" :disabled="submitting" @click="confirmRegister">确认注册</button>
       </div>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import http, { apiError } from '../api/http'
@@ -119,12 +118,29 @@ async function loadCaptcha() {
 }
 
 function confirmRegister() {
-  if (!captchaCode.value.trim()) {
-    captchaError.value = '请填写答案'
-    return
-  }
-  doRegister()
+  tryAutoSubmit()
 }
+
+// 答对即自动提交，不用再点按钮
+function tryAutoSubmit() {
+  if (submitting.value) return
+  const m = String(captchaQuestion.value).match(/(\d+)\s*\+\s*(\d+)/)
+  if (!m) return
+  const expected = Number(m[1]) + Number(m[2])
+  const got = Number(String(captchaCode.value).trim())
+  if (String(captchaCode.value).trim() === '' || Number.isNaN(got)) return
+  if (got === expected) {
+    captchaError.value = ''
+    doRegister()
+  } else if (String(captchaCode.value).trim().length >= String(expected).length) {
+    captchaError.value = '答案不对，请再试一次'
+  }
+}
+
+watch(captchaCode, () => {
+  captchaError.value = ''
+  tryAutoSubmit()
+})
 
 async function doRegister() {
   submitting.value = true
