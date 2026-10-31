@@ -49,3 +49,6 @@ data/sources/ecdict-repo/
 
 # 个人简历脚本（与本项目无关，含真实姓名，不入库）
 tools/make_resume_docx.py
+
+# 本地调试产物
+backend/debug/

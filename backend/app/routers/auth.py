@@ -7,7 +7,15 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..deps import get_current_user
 from ..models import Progress, User
-from ..schemas import LoginRequest, LoginResponse, MeResponse, RegisterRequest, TokenResponse
+from ..schemas import (
+    ChangePasswordRequest,
+    LoginRequest,
+    LoginResponse,
+    MeResponse,
+    OkResponse,
+    RegisterRequest,
+    TokenResponse,
+)
 from ..security import (
     create_access_token,
     hash_password,
@@ -85,3 +93,23 @@ def me(user: User = Depends(get_current_user)):
         level=user.level,
         has_tested=user.has_tested,
     )
+
+
+@router.post("/change-password", response_model=OkResponse)
+def change_password(
+    payload: ChangePasswordRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(payload.old_password, user.password_hash):
+        raise HTTPException(
+            status_code=401, detail={"detail": "原密码不正确", "code": "WRONG_PASSWORD"}
+        )
+    _check_password_bytes(payload.new_password)
+    if payload.old_password == payload.new_password:
+        raise HTTPException(
+            status_code=422, detail={"detail": "新密码不能和原密码相同", "code": "SAME_PASSWORD"}
+        )
+    user.password_hash = hash_password(payload.new_password)
+    db.commit()
+    return OkResponse()

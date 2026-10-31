@@ -229,9 +229,94 @@ class SetProgress(Base):
     total_count: Mapped[int] = mapped_column(Integer, nullable=False, default=15)
     completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+    # --- 三层奖励缓存（v2，见 游戏设计.md 14.1） ---
+    # 只增不减；= question_flowers 里属于该套的行数
+    flowers_earned: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # 已兑出的星星数（0-5）
+    stars_earned: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # 该套是否已产出过徽记（0/1）
+    medals_granted: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # 纯练星球也用它：该套是否「全部答对」
+    is_complete: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
     __table_args__ = (
         UniqueConstraint("user_id", "knowledge_point_id", "set_no", name="uq_set_progress"),
     )
+
+
+class QuestionFlower(Base):
+    """花账本，三层奖励的唯一真相。
+
+    UNIQUE(user_id, question_id) 保证每题只拿一次花（防刷、防重复补花）。
+    set_no 冗余存，便于按套汇总。
+    """
+
+    __tablename__ = "question_flowers"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=_uuid)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    question_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("questions.id"), nullable=False
+    )
+    set_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    source: Mapped[str] = mapped_column(String(16), nullable=False, default="main")  # main|practice
+    earned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "question_id", name="uq_question_flower"),
+        CheckConstraint("source IN ('main','practice')", name="ck_question_flower_source"),
+    )
+
+
+class PlanetMedal(Base):
+    """按星球累计徽记，地图徽标与「全收集」判定用。"""
+
+    __tablename__ = "planet_medals"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=_uuid)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    knowledge_point_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("knowledge_points.id"), nullable=False
+    )
+    medals: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "knowledge_point_id", name="uq_planet_medal"),
+    )
+
+
+class FlowerExchange(Base):
+    """兑换流水。「今日星」口径靠它（当天 to_kind='star' 的 amount 之和）。"""
+
+    __tablename__ = "flower_exchanges"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=_uuid)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    from_kind: Mapped[str] = mapped_column(String(16), nullable=False)  # flower|star
+    to_kind: Mapped[str] = mapped_column(String(16), nullable=False)  # star|medal
+    set_no: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    knowledge_point_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("knowledge_points.id"), nullable=True
+    )
+    amount: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    idempotency_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        CheckConstraint("from_kind IN ('flower','star')", name="ck_exchange_from"),
+        CheckConstraint("to_kind IN ('star','medal')", name="ck_exchange_to"),
+        UniqueConstraint("user_id", "idempotency_key", name="uq_exchange_user_idem"),
+    )
+
 
 
 class LevelTest(Base):

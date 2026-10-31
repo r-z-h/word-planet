@@ -1,5 +1,6 @@
 <template>
-  <div class="page">
+  <div class="wp-dark page">
+    <StarField />
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: center">
         <div>
@@ -21,13 +22,13 @@
         type="warning"
         :closable="false"
       />
-      <el-button style="margin-top: 16px" @click="$router.push('/modules')">去学习</el-button>
+      <el-button style="margin-top: 16px" @click="$router.push('/home')">去学习</el-button>
     </div>
 
     <div v-else-if="!started" class="card" style="text-align: center; padding: 36px 20px">
       <div style="font-size: 48px">🎯</div>
       <h2 class="title">准备好了吗</h2>
-      <p class="muted">
+      <p class="wp2-muted">
         共 10 题，答对 8 题通过。通过后可以自己决定升到 {{ status?.next_level }} 还是留在本级。
       </p>
       <el-button type="primary" size="large" style="width: 100%; height: 50px" @click="startTest">
@@ -40,20 +41,20 @@
       <QuestionRenderer :key="question.id" :question="question" :disabled="submitting" @submit="onAnswer" />
     </div>
 
-    <el-dialog v-model="dialogVisible" title="测试通过" width="360px" :close-on-click-modal="false">
+    <el-dialog v-model="dialogVisible" class="wp2-dialog" title="测试通过" width="360px" :close-on-click-modal="false">
       <p>你答对了 {{ result?.score }} / 10 题，可以进入 {{ result?.next_level }} 了。</p>
-      <p class="muted">也可以先留在本级，把基础打牢一点。</p>
+      <p class="wp2-muted">也可以先留在本级，把基础打牢一点。</p>
       <template #footer>
         <el-button @click="choose(false)">留在本级</el-button>
         <el-button type="primary" @click="choose(true)">进入 {{ result?.next_level }}</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="failVisible" title="还差一点" width="340px" :close-on-click-modal="false">
+    <el-dialog v-model="failVisible" class="wp2-dialog" title="还差一点" width="340px" :close-on-click-modal="false">
       <p>答对了 {{ result?.score }} / 10 题，需要 8 题才能通过。</p>
-      <p class="muted">继续在本级练习，随时可以再来测。</p>
+      <p class="wp2-muted">继续在本级练习，随时可以再来测。</p>
       <template #footer>
-        <el-button type="primary" @click="$router.push('/modules')">回去练习</el-button>
+        <el-button type="primary" @click="$router.push('/home')">回去练习</el-button>
       </template>
     </el-dialog>
   </div>
@@ -65,6 +66,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import http, { apiError } from '../api/http'
 import QuestionRenderer from '../components/QuestionRenderer.vue'
+import StarField from '../components/StarField.vue'
 
 const router = useRouter()
 

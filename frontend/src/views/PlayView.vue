@@ -1,5 +1,94 @@
 <template>
-  <div class="page">
+  <div :class="gameMode ? 'wp-dark v2-page' : 'page'">
+    <StarField v-if="gameMode" />
+    <SpaceBackdrop v-if="gameMode" />
+
+    <!-- ===== 第二版关卡外壳（玩法 A / B） ===== -->
+    <div v-if="gameMode" class="v2-shell">
+      <GameHud
+        :hearts="heart"
+        :combo="combo"
+        :level-name="kp?.name"
+        :set-no="setNo || 1"
+        :set-total="setTotal || 15"
+        :done="setDone"
+        :segs="segs"
+        :flowers="isPurePractice ? null : progress.setFlowers"
+        @exit="askExit"
+      />
+      <div v-if="question" class="v2-body">
+        <PlanetEat
+          v-if="gameMode === 'planet'"
+          ref="planetRef"
+          :key="'p-' + question.id"
+          :question="question"
+          :disabled="submitting || locked"
+          :grown="okCount"
+          :combo="combo"
+          @pick="onPick"
+        />
+        <LetterBricks
+          v-else-if="gameMode === 'bricks'"
+          ref="bricksRef"
+          :key="'b-' + question.id"
+          :question="question"
+          :disabled="submitting || locked"
+          :wall-words="wallWords"
+          @submit="onPick"
+        />
+        <PipeCatch
+          v-else-if="gameMode === 'pipes'"
+          ref="pipesRef"
+          :key="'c-' + question.id"
+          :question="question"
+          :disabled="submitting || locked"
+          @pick="onPick"
+        />
+        <MicRead
+          v-else
+          :key="'d-' + question.id"
+          :question="question"
+          :disabled="submitting || locked"
+          :lit-count="okCount"
+          @submit="onPick"
+        />
+      </div>
+      <div v-else class="v2-body">
+        <el-skeleton :rows="5" animated />
+      </div>
+
+      <!-- 答错停住：正确答案 + 音标 + 义项 + 下一题 -->
+      <div v-if="feedback" class="v2-feedback">
+        <div class="fb-head">
+          <div>
+            <div class="wp2-dim" style="font-size: 12px">正确答案</div>
+            <div class="fb-word">
+              <span class="fb-word-text">{{ feedback.word }}</span>
+              <span v-if="feedback.phonetic" class="phonetic">{{ feedback.phonetic }}</span>
+              <SpeakButton v-if="feedback.word" :text="feedback.word" />
+            </div>
+          </div>
+          <button class="wp2-btn gold" @click="nextAfterFeedback">下一题 →</button>
+        </div>
+        <div v-if="feedback.senses.length" class="senses">
+          <div v-for="(sense, index) in feedback.senses" :key="index" class="sense">
+            <span class="index">{{ index + 1 }}</span>
+            <span>{{ sense.text }}</span>
+            <span v-if="sense.source === 'textbook'" class="tag-textbook">课本</span>
+          </div>
+        </div>
+        <div v-if="feedback.definition_en" class="definition">{{ feedback.definition_en }}</div>
+      </div>
+
+      <div v-if="question && !feedback" class="v2-nav">
+        <button class="wp2-btn" :disabled="submitting" @click="skipNext">跳过 →</button>
+        <span class="wp2-dim" style="font-size: 11.5px">跳过不会记录作答</span>
+      </div>
+      <div ref="redAlertEl" class="v2-redalert" />
+    </div>
+
+    <!-- ===== 第一版布局（其它题型沿用） ===== -->
+    <template v-else>
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: center">
         <div>
@@ -75,6 +164,7 @@
       <span class="muted small">跳过不会记录作答</span>
       <el-button :disabled="submitting" @click="skipNext">下一题 →</el-button>
     </div>
+    </template>
   </div>
 </template>
 
@@ -87,6 +177,14 @@ import { useProgressStore } from '../stores/progress'
 import QuestionRenderer from '../components/QuestionRenderer.vue'
 import PronunciationGame from '../components/PronunciationGame.vue'
 import SpeakButton from '../components/SpeakButton.vue'
+import StarField from '../components/StarField.vue'
+import GameHud from '../components/game/GameHud.vue'
+import PlanetEat from '../components/game/PlanetEat.vue'
+import LetterBricks from '../components/game/LetterBricks.vue'
+import PipeCatch from '../components/game/PipeCatch.vue'
+import MicRead from '../components/game/MicRead.vue'
+import SpaceBackdrop from '../components/game/SpaceBackdrop.vue'
+import { sfxDing, sfxBuzz } from '../utils/sfx'
 
 const router = useRouter()
 const progress = useProgressStore()
@@ -104,12 +202,64 @@ const setNo = ref(null)
 const setTotal = ref(0)
 const setDone = ref(0)
 
+// ===== 第二版关卡状态 =====
+const planetRef = ref(null)
+const bricksRef = ref(null)
+const pipesRef = ref(null)
+const redAlertEl = ref(null)
+const okCount = ref(0) // 本关已答对题数（驱动养成）
+const combo = ref(0) // 连击（驱动四档动作 / 连击显示）
+const heart = ref(3) // 命（纯视觉）
+const segs = ref([]) // 15 段路段条：'ok' | 'no'
+const wallWords = ref([]) // 玩法 B 的单词墙（拼对过的词）
+
 const remaining = computed(() => progress.todayTask?.target_count ?? 0)
 const percent = computed(() => {
   if (!setTotal.value) return 0
   return Math.min(100, Math.round((setDone.value / setTotal.value) * 100))
 })
 const renderer = computed(() => (pronMode.value ? PronunciationGame : QuestionRenderer))
+
+// 当前题走哪个第二版玩法：planet(letter/word) | bricks(spelling) | null(沿用第一版)
+const gameMode = computed(() => {
+  if (!question.value) return null
+  if (pronMode.value) return 'mic'
+  const t = question.value.question_type
+  if (t === 'letter' || t === 'word') return 'planet'
+  if (t === 'spelling') return 'bricks'
+  if (t === 'listening') return 'pipes'
+  return null
+})
+// 纯练星球（字母表/听力）：不显示花计数
+const isPurePractice = computed(
+  () => !!question.value && ['letter', 'listening'].includes(question.value.question_type)
+)
+
+function onPick(payload) {
+  onSubmit(payload)
+}
+
+// 关卡内退出：交给路由守卫统一确认「保存并返回 / 继续做题」
+function askExit() {
+  router.replace('/home')
+}
+
+// 玩法 C 答错：全屏红警闪一下 + 整页晃动
+function flashRedAlert() {
+  const el = redAlertEl.value
+  if (el) {
+    el.classList.remove('on')
+    void el.offsetWidth
+    el.classList.add('on')
+  }
+  const shell = document.querySelector('.v2-shell')
+  if (shell) {
+    shell.classList.remove('shakeall')
+    void shell.offsetWidth
+    shell.classList.add('shakeall')
+    setTimeout(() => shell.classList.remove('shakeall'), 560)
+  }
+}
 
 onMounted(load)
 
@@ -137,6 +287,8 @@ async function next(excludeId = '') {
     const params = excluded.length ? { exclude_id: excluded.join(',') } : {}
     const { data } = await http.get(url, { params })
     question.value = data.question
+    // 玩法 C（听力）按「每题 3 次机会」算：进新题重置心
+    if (data.question?.question_type === 'listening') heart.value = 3
     if (data.set_no) {
       setNo.value = data.set_no
       setTotal.value = data.set_total
@@ -145,8 +297,8 @@ async function next(excludeId = '') {
   } catch (e) {
     const code = e?.response?.data?.detail?.code
     if (code === 'KNOWLEDGE_POINT_FINISHED' || code === 'SET_FINISHED') {
-      ElMessage.success('这个模块已经学完了，去试试别的模块吧')
-      router.replace('/modules')
+      ElMessage.success('这个模块已经学完了，去试试别的星球吧')
+      router.replace('/home')
       return
     }
     ElMessage.error(apiError(e))
@@ -182,6 +334,8 @@ async function onSubmit(payload) {
   const finishedName = kp.value?.name || ''
   const finishedSet = setNo.value
   const answeredId = question.value.id
+  // 选择题记下选了哪个键（玩法 C 要标出是哪条管道）
+  const pickedAnswer = typeof payload === 'string' ? payload.toUpperCase() : payload
 
   try {
     let advanced = false
@@ -208,10 +362,74 @@ async function onSubmit(payload) {
       else ElMessage.error('答错了，已放进错题本')
     }
 
+    // 第二版关卡音效（所有玩法统一）
+    if (gameMode.value) {
+      if (correct) sfxDing()
+      else sfxBuzz()
+    }
+
     await progress.fetchProgress()
     forgetInHistory(answeredId)
-    setDone.value = Math.min(setDone.value + 1, setTotal.value)
     submitting.value = false
+
+    const isPipes = gameMode.value === 'pipes'
+
+    // ===== 玩法 C：答错可重试（最多 3 次，扣光心后揭晓答案） =====
+    if (isPipes && !correct) {
+      combo.value = 0
+      heart.value = Math.max(0, heart.value - 1)
+      pipesRef.value?.markResult(pickedAnswer, false)
+      flashRedAlert()
+      if (heart.value > 0) {
+        // 还能再试：解锁，保持同一题（可先重听）
+        locked.value = false
+        ElMessage.warning(detail?.answer_text ? '再听一次，仔细选' : '再试一次')
+        return
+      }
+      // 三次错完：揭晓正确答案 → 2 秒后下一题
+      pipesRef.value?.revealAnswer(detail?.answer_text || '')
+      segs.value.push('no')
+      setDone.value = Math.min(setDone.value + 1, setTotal.value)
+      heart.value = 3
+      ElMessage.warning(`正确答案是 ${detail?.answer_text || ''}`)
+      const pendingSet = advanced ? { set: finishedSet, kp: finishedName } : null
+      setTimeout(() => {
+        locked.value = false
+        if (pendingSet) {
+          leavingByResult.value = true
+          router.replace({
+            path: '/result',
+            query: { set: String(pendingSet.set || ''), kp: pendingSet.kp }
+          })
+          return
+        }
+        next()
+      }, 2000)
+      return
+    }
+
+    setDone.value = Math.min(setDone.value + 1, setTotal.value)
+
+    // ===== 第二版关卡：局内养成 + 连击 + 路段条 =====
+    if (gameMode.value) {
+      if (correct) {
+        combo.value += 1
+        okCount.value += 1
+        segs.value.push('ok')
+        if (gameMode.value === 'planet') planetRef.value?.celebrate(combo.value)
+        if (gameMode.value === 'bricks') {
+          bricksRef.value?.markResult(true)
+          const w = detail?.answer_text || ''
+          if (w) wallWords.value.push(w)
+        }
+        if (gameMode.value === 'pipes') pipesRef.value?.markResult(pickedAnswer, true)
+      } else {
+        combo.value = 0
+        heart.value = Math.max(0, heart.value - 1)
+        segs.value.push('no')
+        if (gameMode.value === 'bricks') bricksRef.value?.markResult(false)
+      }
+    }
 
     if (advanced) {
       // 整套学完了：答对直接进结算页；答错先把义项看完，点「下一题」再进结算页
@@ -227,10 +445,10 @@ async function onSubmit(payload) {
     }
 
     if (correct) {
-      // 答对保持自动跳
+      // 答对保持自动跳（玩法 A 留足吞卡/成长动画时间）
       setTimeout(() => {
         next()
-      }, 250)
+      }, gameMode.value ? 900 : 250)
       return
     }
 
@@ -340,5 +558,118 @@ onBeforeRouteLeave(async () => {
   line-height: 1.6;
   color: #475569;
   white-space: pre-line;
+}
+
+/* ===== 第二版玩法 A 外壳 ===== */
+.v2-page {
+  min-height: 100vh;
+  padding: 0;
+  max-width: none;
+}
+.v2-shell {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 14px 14px;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.v2-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0;
+}
+.v2-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 6px 0;
+}
+.v2-feedback {
+  flex: none;
+  background: var(--wp2-panel);
+  border: 2px solid rgba(255, 226, 168, 0.22);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-top: 8px;
+}
+.v2-feedback .fb-word-text {
+  color: var(--wp2-ink);
+}
+.v2-feedback .phonetic {
+  color: var(--wp2-muted);
+}
+.v2-feedback .sense {
+  color: var(--wp2-muted);
+}
+.v2-feedback .index {
+  color: var(--wp2-dim);
+}
+.v2-feedback .definition {
+  background: rgba(255, 246, 225, 0.06);
+  color: var(--wp2-muted);
+}
+.tag-textbook {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--wp2-gold);
+  border: 1.5px solid rgba(255, 205, 76, 0.6);
+  border-radius: 99px;
+  padding: 1px 7px;
+}
+
+/* 玩法 C 答错：全屏红警 + 整页晃动 */
+.v2-redalert {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0;
+  box-shadow: inset 0 0 0 6px rgba(255, 60, 60, 0.9), inset 0 0 80px rgba(255, 40, 40, 0.6);
+  background: rgba(255, 40, 40, 0.16);
+}
+.v2-redalert.on { animation: v2-redalert 1s ease-out; }
+@keyframes v2-redalert {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  30% { opacity: 0.4; }
+  46% { opacity: 1; }
+  64% { opacity: 0.35; }
+  80% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+.v2-shell.shakeall { animation: v2-bigshake 0.5s ease-in-out; }
+.v2-shell.fx-shake { animation: fx-shake-kf 0.42s ease-in-out; }
+@keyframes fx-shake-kf {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-5px, 2px); }
+  40% { transform: translate(5px, -2px); }
+  60% { transform: translate(-4px, -1px); }
+  80% { transform: translate(4px, 1px); }
+}
+@keyframes v2-bigshake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-10px, 4px); }
+  20% { transform: translate(10px, -4px); }
+  30% { transform: translate(-9px, -3px); }
+  40% { transform: translate(9px, 3px); }
+  50% { transform: translate(-7px, 2px); }
+  60% { transform: translate(7px, -2px); }
+  70% { transform: translate(-5px, 0); }
+  80% { transform: translate(5px, 0); }
+  90% { transform: translate(-2px, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v2-shell.shakeall { animation: none; }
+  .v2-shell.fx-shake { animation: none; }
+  .v2-redalert.on { animation: none; opacity: 0; }
 }
 </style>

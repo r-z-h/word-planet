@@ -26,9 +26,15 @@ function render() {
     xAxis: {
       type: 'category',
       data: props.daily.map((d) => d.date.slice(5)),
-      axisLabel: { fontSize: 11 }
+      axisLabel: { fontSize: 11, color: '#c9b8f0' },
+      axisLine: { lineStyle: { color: 'rgba(255,232,180,0.28)' } }
     },
-    yAxis: { type: 'value', minInterval: 1 },
+    yAxis: {
+      type: 'value',
+      minInterval: 1,
+      axisLabel: { color: '#c9b8f0' },
+      splitLine: { lineStyle: { color: 'rgba(255,232,180,0.12)' } }
+    },
     series: [
       {
         type: 'bar',

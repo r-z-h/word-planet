@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import require_tested
-from ..models import Attempt, KnowledgePoint, Progress, Question, User
+from ..models import Attempt, KnowledgePoint, Progress, Question, User, Word
 from ..schemas import (
     PronunciationNextResponse,
     PronunciationQuestionOut,
@@ -88,10 +88,38 @@ def next_pronunciation(
         progress.last_question_id = question.id
         db.commit()
 
+    total = db.execute(
+        select(func.count())
+        .select_from(Question)
+        .where(Question.knowledge_point_id == kp.id, Question.set_no == set_no)
+    ).scalar_one()
+    done = db.execute(
+        select(func.count(func.distinct(Attempt.question_id)))
+        .select_from(Attempt)
+        .join(Question, Question.id == Attempt.question_id)
+        .where(
+            Attempt.user_id == user.id,
+            Question.knowledge_point_id == kp.id,
+            Question.set_no == set_no,
+            Attempt.question_type != "practice",
+        )
+    ).scalar_one()
+
+    word = db.execute(
+        select(Word).where(Word.word == str(question.answer).strip().lower())
+    ).scalar_one_or_none()
+
     return PronunciationNextResponse(
         question=PronunciationQuestionOut(
-            id=str(question.id), stem=question.stem, answer=str(question.answer)
-        )
+            id=str(question.id),
+            stem=question.stem,
+            answer=str(question.answer),
+            phonetic=word.phonetic if word else None,
+        ),
+        set_no=set_no,
+        set_total=total,
+        set_done=done,
+        knowledge_point_name=kp.name,
     )
 
 @router.post("/result", response_model=PronunciationResultResponse)

@@ -1,5 +1,6 @@
 <template>
-  <div class="auth-wrap">
+  <div class="wp-dark auth-wrap">
+    <StarField />
     <div class="auth-card">
       <h1 class="title" style="text-align: center">创建账号</h1>
       <p class="muted" style="text-align: center; margin-bottom: 20px">
@@ -46,6 +47,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '../stores/user'
 import { apiError } from '../api/http'
+import StarField from '../components/StarField.vue'
 
 const router = useRouter()
 const user = useUserStore()

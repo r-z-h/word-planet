@@ -1,5 +1,6 @@
 <template>
-  <div class="page">
+  <div class="wp-dark page">
+    <StarField />
     <div class="card">
       <div class="head">
         <h2 class="title" style="margin: 0">词典</h2>
@@ -76,6 +77,7 @@ import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import http, { apiError } from '../api/http'
 import SpeakButton from '../components/SpeakButton.vue'
+import StarField from '../components/StarField.vue'
 
 const PAGE_SIZE = 30
 
@@ -166,7 +168,7 @@ onBeforeUnmount(() => {
 }
 .word {
   padding: 14px 0;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid rgba(255, 232, 180, 0.14);
 }
 .word:last-of-type {
   border-bottom: none;
@@ -185,10 +187,11 @@ onBeforeUnmount(() => {
 }
 .word-text {
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 900;
+  color: var(--wp2-ink);
 }
 .phonetic {
-  color: #64748b;
+  color: var(--wp2-muted);
   font-size: 13px;
 }
 .senses {
@@ -200,10 +203,10 @@ onBeforeUnmount(() => {
   gap: 6px;
   font-size: 14px;
   line-height: 1.7;
-  color: #334155;
+  color: var(--wp2-muted);
 }
 .index {
-  color: #94a3b8;
+  color: var(--wp2-dim);
   font-size: 12px;
   min-width: 14px;
 }
@@ -213,12 +216,13 @@ onBeforeUnmount(() => {
 }
 .definition {
   margin-top: 8px;
-  background: #f8fafc;
+  background: rgba(255, 246, 225, 0.06);
+  border: 1.5px solid rgba(255, 232, 180, 0.14);
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 13px;
   line-height: 1.6;
-  color: #475569;
+  color: var(--wp2-muted);
   white-space: pre-line;
 }
 .more {

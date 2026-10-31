@@ -17,6 +17,7 @@ from ..services.lesson import (
     resolve_current_kp,
 )
 from ..services.words import answer_text, word_payload
+from ..services import tiles as tiles_service
 
 router = APIRouter(prefix="/api", tags=["question"])
 
@@ -134,6 +135,9 @@ def next_question(
                 db.commit()
 
             total, done = _set_counts(db, user.id, kp.id, set_no)
+            tiles = None
+            if question.question_type == "spelling":
+                tiles = tiles_service.tiles_for(question.id, str(question.answer))
             return QuestionNextResponse(
                 question={
                     "id": str(question.id),
@@ -141,6 +145,7 @@ def next_question(
                     "stem": question.stem,
                     "options": question.options,
                     "knowledge_point_id": str(question.knowledge_point_id),
+                    "tiles": tiles,
                 },
                 set_no=set_no,
                 set_total=total,

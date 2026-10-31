@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     vapid_private_key: str = ""
     vapid_subject: str = "mailto:admin@example.com"
 
+
     cors_origins: str = "http://localhost:5173,https://localhost:5173"
 
     @property

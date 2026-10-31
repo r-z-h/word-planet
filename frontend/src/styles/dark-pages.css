@@ -1,0 +1,215 @@
+/* ==========================================================================
+   第二版：给第一版浅色页面套深紫皮肤（只在根节点加了 .wp-dark 的页面里生效）
+   仅改样式，不动任何功能。
+   ========================================================================== */
+
+.wp-dark.page,
+.wp-dark .page {
+  color: var(--wp2-ink);
+}
+
+/* 让深色底铺满整屏（内容仍居中） */
+.wp-dark.page {
+  max-width: none !important;
+  width: 100%;
+  min-height: 100vh !important;
+  box-sizing: border-box;
+  background: var(--wp2-grad) !important;
+  padding-left: max(16px, calc((100% - 960px) / 2)) !important;
+  padding-right: max(16px, calc((100% - 960px) / 2)) !important;
+  padding-top: 16px !important;
+  padding-bottom: 24px !important;
+}
+.wp-dark.auth-wrap {
+  min-height: 100vh !important;
+  background: var(--wp2-grad) !important;
+}
+
+/* 标签配色（Element 默认是白底，深色下会刺眼） */
+.wp-dark .el-tag--info {
+  background: rgba(159, 182, 255, 0.16) !important;
+  color: #cfe0ff !important;
+  border-color: rgba(159, 182, 255, 0.42) !important;
+}
+.wp-dark .el-tag--success {
+  background: rgba(111, 240, 196, 0.16) !important;
+  color: #6ff0c4 !important;
+  border-color: rgba(111, 240, 196, 0.45) !important;
+}
+.wp-dark .el-tag--warning {
+  background: rgba(255, 205, 76, 0.16) !important;
+  color: #ffd166 !important;
+  border-color: rgba(255, 205, 76, 0.5) !important;
+}
+.wp-dark .el-tag--danger {
+  background: rgba(255, 90, 90, 0.16) !important;
+  color: #ff9d9d !important;
+  border-color: rgba(255, 90, 90, 0.45) !important;
+}
+
+/* 卡片 / 标题 / 弱化文字 */
+.wp-dark .card {
+  background: var(--wp2-panel) !important;
+  border: 2px solid rgba(255, 226, 168, 0.18) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3) !important;
+  color: var(--wp2-ink);
+}
+.wp-dark .title { color: var(--wp2-ink); }
+.wp-dark .muted { color: var(--wp2-muted) !important; }
+
+/* 登录/注册卡片 */
+.wp-dark.auth-wrap { background: var(--wp2-grad) !important; }
+.wp-dark .auth-card {
+  background: var(--wp2-panel);
+  border: 2px solid rgba(255, 226, 168, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 20px 46px rgba(0, 0, 0, 0.5);
+  color: var(--wp2-ink);
+}
+
+/* 输入框 / 选择器 */
+.wp-dark .el-input__wrapper,
+.wp-dark .el-textarea__inner {
+  background: rgba(255, 246, 225, 0.08) !important;
+  box-shadow: 0 0 0 2px rgba(255, 232, 180, 0.28) inset !important;
+  border-radius: 10px;
+}
+.wp-dark .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 2px var(--wp2-gold) inset !important;
+}
+.wp-dark .el-input__inner,
+.wp-dark .el-textarea__inner { color: var(--wp2-ink) !important; }
+.wp-dark .el-input__inner::placeholder { color: var(--wp2-dim) !important; }
+.wp-dark .el-select__wrapper {
+  background: rgba(255, 246, 225, 0.08) !important;
+  box-shadow: 0 0 0 2px rgba(255, 232, 180, 0.28) inset !important;
+}
+.wp-dark .el-select__placeholder { color: var(--wp2-dim); }
+.wp-dark .el-select__selected-item { color: var(--wp2-ink); }
+.wp-dark .el-select-dropdown {
+  background: #251546 !important;
+  border: 2px solid rgba(255, 226, 168, 0.2) !important;
+}
+.wp-dark .el-select-dropdown__item { color: var(--wp2-muted) !important; }
+.wp-dark .el-select-dropdown__item.is-hovering { background: rgba(255, 246, 225, 0.1) !important; color: var(--wp2-ink) !important; }
+
+/* 按钮 */
+.wp-dark .el-button { border-radius: 10px; font-weight: 800; }
+.wp-dark .el-button--primary {
+  background: linear-gradient(180deg, #ffd166, #f4a340) !important;
+  color: #3a2109 !important;
+  border: 3px solid var(--wp2-inkline) !important;
+  box-shadow: 0 5px 0 var(--wp2-inkline);
+}
+.wp-dark .el-button--primary:hover { background: linear-gradient(180deg, #ffdb8c, #f6ac4f) !important; }
+.wp-dark .el-button--primary.is-disabled,
+.wp-dark .el-button--primary[disabled] {
+  background: linear-gradient(180deg, #ffd166, #f4a340) !important;
+  filter: grayscale(1) brightness(0.72);
+  box-shadow: none;
+}
+.wp-dark .el-button.is-text,
+.wp-dark .el-button--text { color: var(--wp2-muted) !important; }
+.wp-dark .el-button.is-text:hover { color: var(--wp2-ink) !important; }
+.wp-dark .el-button:not(.el-button--primary):not(.is-text) {
+  background: rgba(255, 246, 225, 0.1);
+  color: var(--wp2-ink);
+  border: 2px solid rgba(255, 232, 180, 0.3);
+}
+
+/* 链接 / 提示 */
+.wp-dark .el-link { color: var(--wp2-l1b) !important; }
+.wp-dark .el-link:hover { color: #fff !important; }
+.wp-dark .el-alert {
+  background: rgba(255, 205, 76, 0.12) !important;
+  border: 1.5px solid rgba(255, 205, 76, 0.4);
+}
+.wp-dark .el-alert__title { color: #ffe1a0 !important; }
+
+/* 表格 */
+.wp-dark .el-table,
+.wp-dark .el-table__inner-wrapper,
+.wp-dark .el-table tr,
+.wp-dark .el-table th.el-table__cell,
+.wp-dark .el-table td.el-table__cell {
+  background: transparent !important;
+  color: var(--wp2-ink) !important;
+  border-color: rgba(255, 232, 180, 0.14) !important;
+}
+.wp-dark .el-table th.el-table__cell {
+  color: var(--wp2-muted) !important;
+  background: rgba(255, 246, 225, 0.05) !important;
+}
+.wp-dark .el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell {
+  background: rgba(255, 246, 225, 0.06) !important;
+}
+.wp-dark .el-table__empty-text { color: var(--wp2-dim) !important; }
+.wp-dark .el-table::before { display: none; }
+
+/* 描述列表 */
+.wp-dark .el-descriptions__body,
+.wp-dark .el-descriptions__label,
+.wp-dark .el-descriptions__content {
+  background: transparent !important;
+  color: var(--wp2-ink) !important;
+}
+.wp-dark .el-descriptions__cell { border-color: rgba(255, 232, 180, 0.16) !important; }
+.wp-dark .el-descriptions__label { color: var(--wp2-muted) !important; }
+
+/* 标签 / 空状态 / 进度 */
+.wp-dark .el-tag { border-radius: 8px; font-weight: 800; }
+.wp-dark .el-empty__description p { color: var(--wp2-dim) !important; }
+.wp-dark .el-progress-bar__outer { background: rgba(255, 255, 255, 0.12) !important; }
+
+/* 用户选择「减弱动效」时：全局动画/过渡几乎取消（保留功能） */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+.reduce-motion .orbit .obj,
+.reduce-motion .drift {
+  opacity: 0.3 !important;
+}
+
+/* 弹窗（设置等）深色化：el-dialog 会挂到 body，不在 .wp-dark 里，所以用独立类 */
+.wp2-dialog {
+  background: #251546 !important;
+  border: 2px solid rgba(255, 226, 168, 0.24) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55) !important;
+}
+.wp2-dialog .el-dialog__header { padding: 16px 18px 6px; }
+.wp2-dialog .el-dialog__title {
+  color: var(--wp2-ink) !important;
+  font-weight: 900;
+  font-size: 17px;
+}
+.wp2-dialog .el-dialog__headerbtn .el-dialog__close { color: var(--wp2-muted) !important; }
+.wp2-dialog .el-dialog__body { color: var(--wp2-ink) !important; padding: 6px 18px 16px; }
+.wp2-dialog p { color: var(--wp2-ink); margin: 6px 0; line-height: 1.6; }
+.wp2-dialog .wp2-muted, .wp2-dialog .muted { color: var(--wp2-muted) !important; }
+.wp2-dialog .el-dialog__footer { padding: 6px 18px 16px; }
+.wp2-dialog .el-button:not(.el-button--primary):not(.is-text) {
+  background: rgba(255, 246, 225, 0.1);
+  color: var(--wp2-ink);
+  border: 2px solid rgba(255, 232, 180, 0.3);
+  border-radius: 10px;
+  font-weight: 800;
+}
+.wp2-dialog .el-button--primary {
+  background: linear-gradient(180deg, #ffd166, #f4a340) !important;
+  border: 3px solid var(--wp2-inkline) !important;
+  color: #3a2109 !important;
+  box-shadow: 0 4px 0 var(--wp2-inkline);
+  border-radius: 10px;
+  font-weight: 900;
+}
+.wp2-dialog .el-overlay { background-color: rgba(10, 6, 24, 0.62); }
+.wp2-dialog .el-switch.is-checked .el-switch__core { background-color: #12b886; border-color: #12b886; }
+
+/* 加载遮罩 */
+.wp-dark .el-loading-mask { background: rgba(21, 13, 48, 0.55) !important; }

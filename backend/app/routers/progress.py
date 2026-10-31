@@ -1,11 +1,26 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_user, require_tested
-from ..models import Attempt, DailyTask, KnowledgePoint, Progress, Question, Streak, User
-from ..schemas import ProgressResponse, StreakResponse, TodayTaskOut
+from ..models import (
+    Achievement,
+    Attempt,
+    DailyTask,
+    FlowerExchange,
+    KnowledgePoint,
+    LevelTest,
+    PlanetMedal,
+    Progress,
+    Question,
+    QuestionFlower,
+    SetProgress,
+    Streak,
+    User,
+    WrongQuestion,
+)
+from ..schemas import OkResponse, ProgressResponse, StreakResponse, TodayTaskOut
 from ..services.attempts import local_date_of, local_today
 from ..services.lesson import (
     completed_set_numbers,
@@ -13,6 +28,7 @@ from ..services.lesson import (
     kp_set_numbers,
     resolve_current_kp,
 )
+from ..services import rewards
 
 router = APIRouter(prefix="/api", tags=["progress"])
 
@@ -83,6 +99,25 @@ def get_progress(user: User = Depends(get_current_user), db: Session = Depends(g
 
     target_count = max(set_total - set_done, 0)
 
+    # 三层奖励（当前套）
+    set_flowers = set_stars = set_medals = 0
+    exchangeable = 0
+    can_medal = False
+    planet_medals = 0
+    if current_kp is not None:
+        planet_medals = rewards.planet_medal_count(db, user.id, current_kp.id)
+        if set_no is not None:
+            sp = rewards.get_set_progress(db, user.id, current_kp.id, set_no)
+            live = rewards.count_flowers(db, user.id, current_kp.id, set_no)
+            if sp is not None:
+                set_flowers = max(sp.flowers_earned or 0, live)
+                set_stars = sp.stars_earned or 0
+                set_medals = sp.medals_granted or 0
+            else:
+                set_flowers = live  # 套未完成也有实时花数
+            exchangeable = rewards.exchangeable_stars_for(set_flowers, set_stars)
+            can_medal = rewards.can_exchange_medal_for(set_stars, set_medals)
+
     return ProgressResponse(
         level=user.level,
         max_level=user.max_level or user.level,
@@ -98,6 +133,12 @@ def get_progress(user: User = Depends(get_current_user), db: Session = Depends(g
         set_no=set_no,
         completed_sets=done_sets,
         total_sets=total_sets,
+        set_flowers=set_flowers,
+        set_stars=set_stars,
+        set_medals=set_medals,
+        exchangeable_stars=exchangeable,
+        can_exchange_medal=can_medal,
+        planet_medals=planet_medals,
     )
 
 
@@ -111,3 +152,38 @@ def get_streak(user: User = Depends(require_tested), db: Session = Depends(get_d
         longest_streak=streak.longest_streak,
         last_study_date=streak.last_study_date,
     )
+
+
+@router.post("/reset-progress", response_model=OkResponse)
+def reset_progress(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """清空学习进度：作答、错题、徽章、花/星/徽记、套进度、连击、今日任务、等级测试记录。
+
+    保留：账号、密码、昵称、当前等级（level / max_level / has_tested）。
+    """
+    for model in (
+        Attempt,
+        WrongQuestion,
+        Achievement,
+        SetProgress,
+        QuestionFlower,
+        PlanetMedal,
+        FlowerExchange,
+        LevelTest,
+        DailyTask,
+    ):
+        db.execute(delete(model).where(model.user_id == user.id))
+
+    streak = db.get(Streak, user.id)
+    if streak is not None:
+        streak.current_streak = 0
+        streak.longest_streak = 0
+        streak.last_study_date = None
+
+    prog = db.get(Progress, user.id)
+    if prog is not None:
+        prog.current_knowledge_point_id = None
+        prog.completed_knowledge_points = []
+        prog.last_question_id = None
+
+    db.commit()
+    return OkResponse()

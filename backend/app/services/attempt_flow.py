@@ -14,6 +14,7 @@ from .attempts import (
     touch_streak,
 )
 from .lesson import SETS_REQUIRED, is_set_complete, mark_set_complete
+from . import rewards
 
 
 def update_wrong_book(
@@ -68,6 +69,15 @@ def apply_attempt(
 
     update_wrong_book(db, user.id, question.id, is_correct)
 
+    # 三层奖励：答对一题记一朵花（错题本补花走 practice）。幂等，重复作答不重复记。
+    if is_correct:
+        rewards.award_flower(
+            db,
+            user.id,
+            question,
+            source="practice" if question_type == "practice" else "main",
+        )
+
     day = local_today(db)
     task = get_or_create_daily_task(db, user.id, day)
 
@@ -78,6 +88,8 @@ def apply_attempt(
         mark_set_complete(db, user, kp, question.set_no)
         set_completed = True
         task.is_completed = True
+        # 套完成行刚建立，回填花数/完成标记
+        rewards.recompute_set_progress(db, user.id, kp.id, question.set_no)
 
         # 该知识点累计完成满 3 套 -> 记入「已完成知识点」（用于徽章与报告）
         from .lesson import completed_set_numbers

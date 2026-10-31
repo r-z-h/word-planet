@@ -1,5 +1,6 @@
 <template>
-  <div class="page">
+  <div class="wp-dark page">
+    <StarField />
     <div class="card" style="display: flex; justify-content: space-between; align-items: center">
       <div>
         <div style="font-weight: 700">错题练习</div>
@@ -71,6 +72,7 @@ import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import http, { apiError } from '../api/http'
 import QuestionRenderer from '../components/QuestionRenderer.vue'
+import StarField from '../components/StarField.vue'
 
 const route = useRoute()
 
@@ -136,15 +138,17 @@ async function onSubmit(answer) {
 <style scoped>
 .explain {
   margin-top: 12px;
-  background: #f8fafc;
+  background: rgba(255, 246, 225, 0.06);
+  border: 1.5px solid rgba(255, 232, 180, 0.14);
   border-radius: 12px;
   padding: 14px;
   line-height: 1.7;
   font-size: 14px;
+  color: var(--wp2-muted);
 }
 .explain-title {
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 6px;
-  color: #4c6ef5;
+  color: var(--wp2-gold);
 }
 </style>

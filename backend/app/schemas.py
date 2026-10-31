@@ -45,6 +45,8 @@ class QuestionOut(BaseModel):
     stem: str
     options: dict | None = None
     knowledge_point_id: str | None = None
+    # 拼写题：打乱后的字母砖（答案字母各 1 块 + 4 干扰，可重复点）
+    tiles: list[str] | None = None
 
 
 class QuestionNextResponse(BaseModel):
@@ -133,12 +135,81 @@ class ProgressResponse(BaseModel):
     set_no: int | None = None
     completed_sets: int = 0
     total_sets: int = 0
+    # --- 三层奖励（当前套） ---
+    set_flowers: int = 0          # 本套已得花（0-15）
+    set_stars: int = 0            # 本套已兑星（0-5）
+    set_medals: int = 0           # 本套已产徽记（0/1）
+    exchangeable_stars: int = 0   # 当前可兑星数
+    can_exchange_medal: bool = False
+    planet_medals: int = 0        # 当前星球累计徽记
 
 
 class StreakResponse(BaseModel):
     current_streak: int
     longest_streak: int
     last_study_date: date | None
+
+
+# ---------------------------------------------------------------- 星球地图
+
+class MapPlanetOut(BaseModel):
+    id: str
+    name: str
+    level: str
+    question_type: str
+    total_sets: int = 0
+    completed_sets: int = 0
+    current_set: int | None = None
+    medals: int = 0          # 该星球已获得徽记
+    max_medals: int = 0      # 该星球徽记上限（= 套数）
+    pure: bool = False       # 纯练星球（不产奖励）
+    is_complete: bool = False  # 纯练星球「已完成」
+    locked: bool = False
+    is_current: bool = False
+
+
+class MapResponse(BaseModel):
+    level: str | None = None
+    max_level: str | None = None
+    current_planet_id: str | None = None
+    planets: list[MapPlanetOut] = []
+    today_flowers: int = 0
+    today_stars: int = 0
+    total_flowers: int = 0
+    # 底部 CTA 条用的真实统计
+    today_attempts: int = 0
+    today_correct: int = 0
+    today_max_combo: int = 0
+    week_counts: list[int] = []  # 本周一→周日 每天作答数
+    gate_ready: bool = False     # 本级是否已达能力测试门槛
+    next_level: str | None = None
+
+
+# ---------------------------------------------------------------- 三层奖励
+
+class RewardSummaryOut(BaseModel):
+    knowledge_point_id: str
+    set_no: int
+    flowers: int = 0
+    stars: int = 0
+    medals: int = 0
+    exchangeable_stars: int = 0
+    can_exchange_medal: bool = False
+    planet_medals: int = 0
+    set_completed: bool = False
+
+
+class RewardExchangeRequest(BaseModel):
+    knowledge_point_id: str | None = None
+    set_no: int | None = None
+    from_kind: Literal["flower", "star"]
+    amount: int = Field(default=1, ge=1, le=5)
+    idempotency_key: str = Field(min_length=8, max_length=64)
+
+
+class RewardExchangeResponse(BaseModel):
+    ok: bool
+    summary: RewardSummaryOut
 
 
 class WrongItem(BaseModel):
@@ -163,6 +234,18 @@ class AchievementItem(BaseModel):
 
 class AchievementResponse(BaseModel):
     items: list[AchievementItem]
+    medals: list['MedalItem'] = []
+
+
+class MedalItem(BaseModel):
+    knowledge_point_id: str
+    name: str
+    level: str
+    medals: int
+    max_medals: int
+
+
+AchievementResponse.model_rebuild()
 
 
 class DailyAttempt(BaseModel):
@@ -189,10 +272,15 @@ class PronunciationQuestionOut(BaseModel):
     id: str
     stem: str
     answer: str
+    phonetic: str | None = None
 
 
 class PronunciationNextResponse(BaseModel):
     question: PronunciationQuestionOut
+    set_no: int = 1
+    set_total: int = 15
+    set_done: int = 0
+    knowledge_point_name: str = ""
 
 
 class PronunciationResultRequest(BaseModel):
@@ -216,6 +304,11 @@ class PushSubscribeRequest(BaseModel):
 
 class OkResponse(BaseModel):
     ok: bool = True
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str = Field(min_length=6, max_length=72)
 
 
 # ---------------- 错题本练习 ----------------

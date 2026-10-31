@@ -1,5 +1,6 @@
 <template>
-  <div class="page">
+  <div class="wp-dark page">
+    <StarField />
     <div class="card">
       <h2 class="title">先做个小测试 🌍</h2>
       <p class="muted">共 10 题左右，答完就能找到适合你的起点。</p>
@@ -32,6 +33,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import http, { apiError } from '../api/http'
 import QuestionRenderer from '../components/QuestionRenderer.vue'
+import StarField from '../components/StarField.vue'
 import { useUserStore } from '../stores/user'
 
 const router = useRouter()

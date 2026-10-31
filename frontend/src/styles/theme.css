@@ -1,0 +1,109 @@
+/* ==========================================================================
+   Word Planet 第二版 · 深紫太空视觉地基
+   --------------------------------------------------------------------------
+   只定义 token 与通用工具类，不覆盖第一版浅色页面（那些页面继续用 style.css）。
+   新页面（星球地图 / 关卡 / 结算）在外层套 .wp-dark，即得到深紫太空底。
+   token 取值与 .run/mockups/第二版最终定版.html 一致。
+   ========================================================================== */
+
+:root {
+  --wp2-bg1: #150d30;
+  --wp2-bg2: #2c1a54;
+  --wp2-panel: rgba(44, 27, 82, 0.86);
+  --wp2-ink: #fffaf0;
+  --wp2-muted: #c9b8f0;
+  --wp2-dim: #8d7cb8;
+  --wp2-l1: #4c6ef5;
+  --wp2-l1b: #9fb6ff;
+  --wp2-l2: #12b886;
+  --wp2-l2b: #6ff0c4;
+  --wp2-l3: #845ef7;
+  --wp2-l3b: #c0a8ff;
+  --wp2-gold: #ffcd4c;
+  --wp2-inkline: #241338;
+  --wp2-line: rgba(255, 226, 168, 0.34);
+  --wp2-red: #ff5a5a;
+  --wp2-grad: radial-gradient(130% 90% at 30% -10%, var(--wp2-bg2), var(--wp2-bg1) 60%);
+}
+
+/* 深色舞台容器：整页太空底 + 星点 */
+.wp-dark {
+  position: relative;
+  min-height: 100vh;
+  background: var(--wp2-grad);
+  color: var(--wp2-ink);
+  overflow-x: hidden;
+}
+
+/* 星点背景（纯 CSS，无需图片） */
+.wp-stars {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.wp-stars i {
+  position: absolute;
+  background: #fff;
+  border-radius: 50%;
+  animation: wp-twinkle 5s ease-in-out infinite;
+}
+@keyframes wp-twinkle {
+  0%, 100% { opacity: 0.12; }
+  50% { opacity: 0.65; }
+}
+
+/* 卡片 / 面板 */
+.wp2-card {
+  background: var(--wp2-panel);
+  border: 2px solid rgba(255, 226, 168, 0.18);
+  border-radius: 16px;
+  padding: 14px;
+  color: var(--wp2-ink);
+}
+
+/* 按钮：粗描边 + 实心投影，按下会“沉下去” */
+.wp2-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 900;
+  cursor: pointer;
+  color: var(--wp2-ink);
+  background: rgba(255, 246, 225, 0.1);
+  border: 3px solid var(--wp2-inkline);
+  box-shadow: 0 5px 0 var(--wp2-inkline);
+  transition: transform 0.12s, box-shadow 0.12s, background 0.2s;
+  user-select: none;
+}
+.wp2-btn:hover { background: rgba(255, 246, 225, 0.16); }
+.wp2-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--wp2-inkline);
+}
+.wp2-btn.gold {
+  background: linear-gradient(180deg, #ffd166, #f4a340);
+  color: #3a2109;
+}
+.wp2-btn[disabled] {
+  filter: grayscale(1) brightness(0.75);
+  cursor: default;
+  box-shadow: 0 3px 0 var(--wp2-inkline);
+}
+
+/* 小工具类 */
+.wp2-muted { color: var(--wp2-muted); }
+.wp2-dim { color: var(--wp2-dim); }
+.wp2-gold { color: var(--wp2-gold); }
+.wp2-row { display: flex; align-items: center; gap: 10px; }
+.wp2-grow { flex: 1; }
+
+/* 尊重「减少动态效果」 */
+@media (prefers-reduced-motion: reduce) {
+  .wp-stars i { animation: none; opacity: 0.4; }
+  .wp2-btn { transition: none; }
+}

@@ -1,5 +1,6 @@
 <template>
-  <div class="page">
+  <div class="wp-dark page">
+    <StarField />
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: center">
         <h2 class="title" style="margin: 0">学习报告</h2>
@@ -50,6 +51,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import http, { apiError } from '../api/http'
 import ReportCharts from '../components/ReportCharts.vue'
+import StarField from '../components/StarField.vue'
 
 const report = ref(null)
 

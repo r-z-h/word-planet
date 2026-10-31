@@ -16,6 +16,7 @@ from .routers import (
     push,
     question,
     report,
+    reward,
     test,
     words,
     wrong,
@@ -79,6 +80,7 @@ for router in (
     lesson.router,
     level_test.router,
     words.router,
+    reward.router,
 ):
     app.include_router(router)
 

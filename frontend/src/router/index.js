@@ -8,7 +8,7 @@ const routes = [
   { path: '/home', component: () => import('../views/HomeView.vue') },
   { path: '/test', component: () => import('../views/TestView.vue') },
   { path: '/play', component: () => import('../views/PlayView.vue') },
-  { path: '/modules', component: () => import('../views/ModulesView.vue') },
+  { path: '/modules', redirect: '/home' },
   { path: '/level-test', component: () => import('../views/LevelTestView.vue') },
   { path: '/result', component: () => import('../views/ResultView.vue') },
   { path: '/practice', component: () => import('../views/PracticeView.vue') },

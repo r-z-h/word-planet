@@ -1,5 +1,6 @@
 <template>
-  <div class="page">
+  <div class="wp-dark page">
+    <StarField />
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: center">
         <h2 class="title" style="margin: 0">错题本</h2>
@@ -70,6 +71,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import http, { apiError } from '../api/http'
 import SpeakButton from '../components/SpeakButton.vue'
+import StarField from '../components/StarField.vue'
 
 const router = useRouter()
 
@@ -115,19 +117,20 @@ function startPractice() {
 }
 .box {
   flex: 1;
-  background: #f8fafc;
+  background: rgba(255, 246, 225, 0.07);
+  border: 1.5px solid rgba(255, 232, 180, 0.18);
   border-radius: 12px;
   padding: 12px;
   text-align: center;
 }
 .num {
   font-size: 22px;
-  font-weight: 700;
-  color: #4c6ef5;
+  font-weight: 900;
+  color: var(--wp2-gold);
 }
 .row {
   padding: 14px 0;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid rgba(255, 232, 180, 0.14);
 }
 .row:last-child {
   border-bottom: none;
@@ -141,6 +144,7 @@ function startPractice() {
 .stem {
   font-weight: 600;
   line-height: 1.5;
+  color: var(--wp2-ink);
 }
 .row-meta {
   display: flex;
@@ -150,11 +154,12 @@ function startPractice() {
 }
 .explain {
   margin-top: 8px;
-  background: #f8fafc;
+  background: rgba(255, 246, 225, 0.06);
+  border: 1.5px solid rgba(255, 232, 180, 0.14);
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 13px;
   line-height: 1.6;
-  color: #475569;
+  color: var(--wp2-muted);
 }
 </style>

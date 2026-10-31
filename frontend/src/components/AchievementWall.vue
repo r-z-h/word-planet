@@ -35,9 +35,11 @@ function formatDate(value) {
   gap: 12px;
 }
 .badge {
-  background: #f8fafc;
+  background: rgba(255, 246, 225, 0.07);
+  border: 1.5px solid rgba(255, 232, 180, 0.18);
   border-radius: 14px;
   padding: 16px 8px;
   text-align: center;
+  color: var(--wp2-ink);
 }
 </style>
