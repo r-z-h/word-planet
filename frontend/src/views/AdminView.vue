@@ -26,12 +26,22 @@
             <span v-else class="wp2-dim">—</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="240">
+        <el-table-column label="锁定" width="90">
+          <template #default="{ row }">
+            <el-tag v-if="row.locked_remaining > 0" type="danger" size="small">
+              剩 {{ Math.ceil(row.locked_remaining / 60) }} 分
+            </el-tag>
+            <span v-else class="wp2-dim">—</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="430">
           <template #default="{ row }">
             <el-button size="small" @click="openReset(row)">重置密码</el-button>
             <el-button size="small" :type="row.is_admin ? 'info' : 'primary'" @click="toggleAdmin(row)">
               {{ row.is_admin ? '取消管理员' : '设为管理员' }}
             </el-button>
+            <el-button size="small" type="success" @click="unlockLevel(row)">解锁等级</el-button>
+            <el-button size="small" :disabled="row.locked_remaining <= 0" @click="clearLock(row)">解除锁定</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -118,6 +128,35 @@ async function toggleAdmin(row) {
   try {
     await http.post('/admin/set-admin', { account: row.account, is_admin: target })
     ElMessage.success('已更新')
+    await load()
+  } catch (e) {
+    ElMessage.error(apiError(e))
+  }
+}
+
+async function unlockLevel(row) {
+  try {
+    await ElMessageBox.confirm(`把 ${row.account} 解锁到最高等级（L3）？`, '解锁等级', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+  } catch {
+    return
+  }
+  try {
+    await http.post('/admin/unlock-level', { account: row.account })
+    ElMessage.success('已解锁全部等级')
+    await load()
+  } catch (e) {
+    ElMessage.error(apiError(e))
+  }
+}
+
+async function clearLock(row) {
+  try {
+    await http.post('/admin/clear-lock', { account: row.account })
+    ElMessage.success('已解除锁定')
     await load()
   } catch (e) {
     ElMessage.error(apiError(e))

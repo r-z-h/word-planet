@@ -24,7 +24,15 @@ from ..security import (
     normalize_account,
     verify_password,
 )
-from ..services.security_extra import make_captcha, rate_limit, verify_captcha
+from ..services.security_extra import (
+    check_lock,
+    fail_key,
+    make_captcha,
+    rate_limit,
+    record_failure,
+    record_success,
+    verify_captcha,
+)
 
 router = APIRouter(prefix="/api", tags=["auth"])
 
@@ -47,40 +55,47 @@ def _check_password_bytes(raw: str) -> None:
 @router.post("/register", response_model=TokenResponse, status_code=201)
 def register(payload: RegisterRequest, request: Request, db: Session = Depends(get_db)):
     rate_limit(request, "register")
-    verify_captcha(payload.captcha_token, payload.captcha_code)
-    if not payload.agreed_terms:
-        raise HTTPException(
-            status_code=422,
-            detail={"detail": "请先阅读并同意用户协议与隐私政策", "code": "TERMS_REQUIRED"},
-        )
-    _check_password_bytes(payload.password)
     account = normalize_account(payload.account)
+    ip = request.client.host if request.client else 'unknown'
+    key = fail_key(ip, account)
+    check_lock(key)
+    try:
+        verify_captcha(payload.captcha_token, payload.captcha_code)
+        if not payload.agreed_terms:
+            raise HTTPException(
+                status_code=422,
+                detail={"detail": "请先阅读并同意用户协议与隐私政策", "code": "TERMS_REQUIRED"},
+            )
+        _check_password_bytes(payload.password)
 
-    exists = db.execute(select(User).where(User.account == account)).scalar_one_or_none()
-    if exists is not None:
-        raise HTTPException(
-            status_code=409, detail={"detail": "账号已存在", "code": "ACCOUNT_EXISTS"}
+        exists = db.execute(select(User).where(User.account == account)).scalar_one_or_none()
+        if exists is not None:
+            raise HTTPException(
+                status_code=409, detail={"detail": "账号已存在", "code": "ACCOUNT_EXISTS"}
+            )
+
+        user = User(
+            account=account,
+            password_hash=hash_password(payload.password),
+            nickname=payload.nickname.strip(),
+            has_tested=False,
         )
-
-    user = User(
-        account=account,
-        password_hash=hash_password(payload.password),
-        nickname=payload.nickname.strip(),
-        has_tested=False,
-    )
-    db.add(user)
-    db.flush()
-
-    db.add(
-        Progress(
-            user_id=user.id,
-            current_knowledge_point_id=None,
-            completed_knowledge_points=[],
+        db.add(user)
+        db.flush()
+        db.add(
+            Progress(
+                user_id=user.id,
+                current_knowledge_point_id=None,
+                completed_knowledge_points=[],
+            )
         )
-    )
-    db.commit()
-    db.refresh(user)
+        db.commit()
+        db.refresh(user)
+    except HTTPException:
+        record_failure(key)
+        raise
 
+    record_success(key)
     return TokenResponse(
         user_id=str(user.id),
         access_token=create_access_token(str(user.id)),
@@ -92,14 +107,19 @@ def register(payload: RegisterRequest, request: Request, db: Session = Depends(g
 @router.post("/login", response_model=LoginResponse)
 def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)):
     rate_limit(request, "login")
-    verify_captcha(payload.captcha_token, payload.captcha_code)
     account = normalize_account(payload.account)
+    ip = request.client.host if request.client else 'unknown'
+    key = fail_key(ip, account)
+    check_lock(key)
+
     user = db.execute(select(User).where(User.account == account)).scalar_one_or_none()
     if user is None or not verify_password(payload.password, user.password_hash):
+        record_failure(key)
         raise HTTPException(
             status_code=401, detail={"detail": "账号或密码错误", "code": "BAD_CREDENTIALS"}
         )
 
+    record_success(key)
     return LoginResponse(
         access_token=create_access_token(str(user.id)),
         has_tested=user.has_tested,

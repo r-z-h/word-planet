@@ -22,6 +22,15 @@ from app.main import app  # noqa: E402
 from app.models import KnowledgePoint, Progress, Question, User  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def _disable_public_security(monkeypatch):
+    """测试默认关闭验证码/限流（个别用例会自己打开）。"""
+    from app.config import settings
+
+    monkeypatch.setattr(settings, 'require_captcha', False)
+    monkeypatch.setattr(settings, 'rate_limit_per_min', 0)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def prepared_database():
     Base.metadata.drop_all(bind=engine)

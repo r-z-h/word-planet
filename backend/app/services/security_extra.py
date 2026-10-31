@@ -54,6 +54,95 @@ def verify_captcha(token: str | None, code: str | None) -> None:
         raise HTTPException(status_code=422, detail={'detail': '验证码不正确', 'code': 'CAPTCHA_WRONG'})
 
 
+# ---------------- 失败锁定 ----------------
+# 规则：同一 IP+账号 60 秒内连续 5 次失败 → 锁 10 分钟；
+# 解锁后再次触发 → 锁 30 分钟；之后 10/30 交替循环。
+FAIL_WINDOW = 60
+FAIL_THRESHOLD = 5
+LOCK_STEPS = (600, 1800)  # 秒：10 分钟 / 30 分钟
+
+_fails: dict[str, list[float]] = {}
+_locks: dict[str, dict] = {}
+_stage: dict[str, int] = {}
+
+
+def fail_key(ip: str, account: str) -> str:
+    return f'{ip}:{(account or "").strip().lower()}'
+
+
+def _fmt_wait(seconds: int) -> str:
+    m, s = divmod(max(0, int(seconds)), 60)
+    if m and s:
+        return f'{m} 分 {s} 秒'
+    if m:
+        return f'{m} 分钟'
+    return f'{s} 秒'
+
+
+def check_lock(key: str) -> None:
+    rec = _locks.get(key)
+    if not rec:
+        return
+    left = rec['until'] - time.time()
+    if left <= 0:
+        _locks.pop(key, None)
+        return
+    raise HTTPException(
+        status_code=429,
+        detail={
+            'detail': f'操作过于频繁，已被临时锁定，请 {_fmt_wait(left)}后再试',
+            'code': 'LOCKED',
+            'retry_after': int(left),
+        },
+    )
+
+
+def record_failure(key: str) -> None:
+    now = time.time()
+    arr = [t for t in _fails.get(key, []) if now - t < FAIL_WINDOW]
+    arr.append(now)
+    if len(arr) < FAIL_THRESHOLD:
+        _fails[key] = arr
+        return
+    # 触发锁定：10/30 交替
+    stage = _stage.get(key, 0)
+    duration = LOCK_STEPS[stage % len(LOCK_STEPS)]
+    _stage[key] = stage + 1
+    _locks[key] = {'until': now + duration}
+    _fails[key] = []
+
+
+def record_success(key: str) -> None:
+    _fails.pop(key, None)
+
+
+def lock_remaining_for_account(account: str) -> int:
+    """管理员列表用：该账号任意 IP 的最长剩余锁定秒数。"""
+    suffix = ':' + (account or '').strip().lower()
+    now = time.time()
+    best = 0
+    for k, rec in list(_locks.items()):
+        if k.endswith(suffix):
+            best = max(best, int(rec['until'] - now))
+    return max(0, best)
+
+
+def clear_lock_for_account(account: str) -> int:
+    suffix = ':' + (account or '').strip().lower()
+    removed = 0
+    for k in list(_locks.keys()):
+        if k.endswith(suffix):
+            _locks.pop(k, None)
+            removed += 1
+    for k in list(_fails.keys()):
+        if k.endswith(suffix):
+            _fails.pop(k, None)
+    for k in list(_stage.keys()):
+        if k.endswith(suffix):
+            _stage.pop(k, None)
+    return removed
+
+
 # ---------------- 频率限制 ----------------
 _buckets: dict[str, list[float]] = {}
 

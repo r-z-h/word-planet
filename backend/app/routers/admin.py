@@ -8,6 +8,7 @@ from ..database import get_db
 from ..deps import require_admin
 from ..models import User
 from ..schemas import (
+    AdminAccountActionRequest,
     AdminResetPasswordRequest,
     AdminSetAdminRequest,
     AdminUserItem,
@@ -15,6 +16,7 @@ from ..schemas import (
     OkResponse,
 )
 from ..security import hash_password, normalize_account
+from ..services.security_extra import clear_lock_for_account, lock_remaining_for_account
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -33,6 +35,7 @@ def list_users(admin: User = Depends(require_admin), db: Session = Depends(get_d
                 has_tested=u.has_tested,
                 is_admin=u.is_admin,
                 created_at=u.created_at,
+                locked_remaining=lock_remaining_for_account(u.account),
             )
             for u in rows
         ]
@@ -68,4 +71,31 @@ def admin_set_admin(
         raise HTTPException(status_code=422, detail={"detail": "不能取消自己的管理员权限", "code": "CANNOT_DEMOTE_SELF"})
     user.is_admin = payload.is_admin
     db.commit()
+    return OkResponse()
+
+
+@router.post("/unlock-level", response_model=OkResponse)
+def admin_unlock_level(
+    payload: AdminAccountActionRequest,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """解锁该账号的全部等级（max_level=L3，并标记为已测）。"""
+    account = normalize_account(payload.account)
+    user = db.execute(select(User).where(User.account == account)).scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=404, detail={"detail": "账号不存在", "code": "USER_NOT_FOUND"})
+    user.max_level = 'L3'
+    user.has_tested = True
+    db.commit()
+    return OkResponse()
+
+
+@router.post("/clear-lock", response_model=OkResponse)
+def admin_clear_lock(
+    payload: AdminAccountActionRequest,
+    admin: User = Depends(require_admin),
+):
+    """解除该账号的登录/注册失败锁定（清空频率计数）。"""
+    clear_lock_for_account(normalize_account(payload.account))
     return OkResponse()

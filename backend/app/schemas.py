@@ -63,6 +63,11 @@ class AdminUserItem(BaseModel):
     has_tested: bool = False
     is_admin: bool = False
     created_at: datetime | None = None
+    locked_remaining: int = 0
+
+
+class AdminAccountActionRequest(BaseModel):
+    account: str
 
 
 class AdminUsersResponse(BaseModel):
