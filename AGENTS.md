@@ -28,6 +28,21 @@
 - 数据库连接、JWT、VAPID 都在 `backend/.env`（不入库）
 - 前端电脑用 `http://localhost:5173`；手机用 `https://<局域网IP>:5174`（自签证书）
 
+### 公网演示（临时隧道 + 口令门，方案②）
+
+给家人/朋友临时演示时，把本机 5173 发布到公网：
+
+```powershell
+.\tools\tunnel.ps1 start     # 启动口令门(8080)+cloudflared，打印 公网 URL / 用户名 / 密码
+.\tools\tunnel.ps1 status    # 查看前端/后端/口令门/隧道状态、当前 URL、登录口令
+.\tools\tunnel.ps1 stop      # 关闭公网入口（开发栈不动）
+```
+
+- **只暴露口令门 8080（自带登录页 + 签名 Cookie）**，后端 8000 与数据库不出网；前端经 Vite `/api` 代理访问后端。
+- 临时隧道**每次 start 公网 URL 都会变、无 SLA**；口令存 `.run\tunnel-credentials.json`（git-ignored，**明文，勿外发/勿截图**）。
+- 排查未授权隧道：`status` 会告警第三方 cloudflared；遗留直连隧道常用指标端口 20241（本脚本用 20242）。
+- 完整说明见 `docs/公网演示使用与安全说明.md`。
+
 ## 3. 常用验证命令
 
 ```powershell
@@ -46,6 +61,7 @@ cd backend
 ## 4. 已完成
 
 - 认证、水平测试分级、答题、错题本、错题练习、解析、徽章、连续学习、家长报告、推送、每日提醒
+- **游客体验 `/guest`**：登录页有「游客体验」入口，免注册；后端 `/api/guest/*`（`backend/app/routers/guest.py`）按模块随机取 3 题、判题返回义项，**不写库、不记进度/错题**；排除跟读（依赖麦克风+Google 语音）。模块列表来自 6 个知识点。
 - **按套推进**：知识点 → 套（每套 15 题）→ 题目；`set_progress` 记录完成；
   知识点"达标" = 完成 ≥3 套；字母表/听力不计入门槛（`knowledge_points.counts_for_gate=false`）
 - **能力测试**：本级门槛知识点各满 3 套 → `POST /api/level-test/start` → 10 题对 8 过 →
@@ -87,6 +103,7 @@ cd backend
   再跑 `import_dictionary.py`；它是 `DELETE` 后重建整表，别只改库
 - **词典英文释义**：ECDICT 里是字面量 `\n`，`import_dictionary.py` 导入时会转成真换行，别在库里手改
 - **测试库**：pytest 用 `word_planet_test`，会自动跑 `seed.py` + `seed_words.py`，需要 `data/build/words.json` 存在
+- **页面空白只剩标题（浏览器标签是项目名）**：多为前端 Vite 依赖预构建缓存坏了（控制台 `504 Outdated Optimize Dep`）。电脑 5173 与手机 5174 两个 dev 实例曾共用 `node_modules/.vite` 互相抢占，导致 `deps` 只留下 `deps_temp_*`；已在 `frontend/vite.config.js` 按模式分 `cacheDir`（`.vite-desktop` / `.vite-mobile`）。再遇空白：删 `frontend/node_modules/.vite*` 后重启前端。
 - 本机无 WSL、无 Docker；PostgreSQL 用便携版
 
 ## 8. 改代码前的规矩

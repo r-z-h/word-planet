@@ -22,6 +22,7 @@ from .routers import (
     test,
     words,
     wrong,
+    guest,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -85,6 +86,7 @@ for router in (
     reward.router,
     account.router,
     admin.router,
+    guest.router,
 ):
     app.include_router(router)
 

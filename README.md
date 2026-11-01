@@ -156,3 +156,42 @@ cd backend
 - 跟读的对错由前端判定后上报，可被伪造（自用场景接受）。
 - 水平测试会话存进程内，重启后未完成的测试会丢失。
 - 便携版 PostgreSQL 不做开机自启，也不做备份策略。
+
+---
+
+## 八、外网访问（让不在同一局域网的人也能用）
+
+> 详细操作见 [`docs/公网演示使用与安全说明.md`](./docs/公网演示使用与安全说明.md)
+
+**原理（Cloudflare Quick Tunnel + 口令门）：**
+
+```
+访客浏览器 --HTTPS--> xxx.trycloudflare.com --隧道--> 127.0.0.1:8080 口令门 --HTTP--> 127.0.0.1:5173 (Vite 前端)
+                                                                    └-- /api 代理 --> 127.0.0.1:8000 (后端)
+```
+
+- 只有**口令门 8080** 暴露到公网；后端 8000 与数据库始终只在本机。
+- `cloudflared` 是**出站连接**到 Cloudflare 边缘，路由器不用开端口。
+- 用法：`.\dev.ps1 start` 后执行 `.\tools\tunnel.ps1 start`，会打印 **公网 URL / 用户名 / 密码**；`status` 查看、`stop` 关闭。
+- 临时隧道**每次 start 公网 URL 都会变、无 SLA**；Web 推送在临时隧道下不可用。
+
+**⚠️ `cloudflared.exe` 不在仓库里**（单文件约 53MB，提交会拖大仓库）。首次使用先运行：
+
+```powershell
+.\tools\get-cloudflared.ps1
+```
+
+它会下载 `cloudflared-windows-amd64.exe` 到 `tools\bin\`；也可从 Cloudflare 官方 release 手动下载放到该目录。
+
+**关于“通过 GitHub 直接访问”：** GitHub 只是代码托管，**不能运行**本项目（它需要前端 + 后端 + 数据库三个进程）。别人打开你的 GitHub 只能看代码与结构，不能直接玩；除非用 GitHub Pages 托管构建后的前端静态文件，但没有后端 API/数据库依旧用不了。**真正给别人使用，必须是“运行本项目的电脑 + 隧道公网地址”。**
+
+---
+
+## 九、语音与跟读是怎么实现的（未使用讯飞）
+
+> 项目**没有使用讯飞（iFlytek）或任何第三方语音 API**，全部走浏览器原生 Web Speech API，跑在用户浏览器里；服务端不参与，也不保存音频。
+
+- **朗读 / 听力（TTS）**：`SpeechSynthesis`，见 [`frontend/src/utils/speech.js`](./frontend/src/utils/speech.js)。优先选**本地英文声音**（如 Edge 的 Zira），避免在线声音卡顿。
+- **跟读（识别）**：`SpeechRecognition`，见 `frontend/src/components/PronunciationGame.vue`、`MicRead.vue`。Chrome/Edge 底层用**谷歌在线识别**，需要 HTTPS 且能访问谷歌 —— **国内网络通常不可用**，所以跟读在本地/公网基本用不了；其它题型不受影响。
+- **安全上下文**：`getUserMedia`（麦克风）、`SpeechRecognition`、Service Worker、Web Push 都要求 **HTTPS**（`localhost` 也算安全上下文）。
+- 若要让跟读在国内稳定可用，需要另接国内语音服务（如讯飞），那属于新增功能、需要 API Key，**目前没有做**。

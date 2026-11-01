@@ -30,6 +30,10 @@
       <div style="text-align: center; margin-top: 16px">
         <el-link type="primary" @click="$router.push('/register')">还没有账号？去注册</el-link>
       </div>
+
+      <div style="text-align: center; margin-top: 10px">
+        <el-button text @click="$router.push('/guest')">先随便逛逛 · 游客体验（无需注册）</el-button>
+      </div>
     </div>
   </div>
 </template>

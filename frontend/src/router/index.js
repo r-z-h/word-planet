@@ -5,6 +5,7 @@ const routes = [
   { path: '/', redirect: '/home' },
   { path: '/login', component: () => import('../views/LoginView.vue') },
   { path: '/register', component: () => import('../views/RegisterView.vue') },
+  { path: '/guest', component: () => import('../views/GuestView.vue') },
   { path: '/terms', component: () => import('../views/TermsView.vue') },
   { path: '/privacy', component: () => import('../views/PrivacyView.vue') },
   { path: '/admin', component: () => import('../views/AdminView.vue') },
@@ -33,6 +34,9 @@ router.beforeEach(async (to) => {
     if (user.token) return { path: '/home' }
     return true
   }
+
+  // 游客体验：无需登录即可访问
+  if (to.path === '/guest') return true
 
   if (!user.token) return { path: '/login' }
 
