@@ -187,11 +187,17 @@ cd backend
 
 ---
 
-## 九、语音与跟读是怎么实现的（未使用讯飞）
+## 九、语音与跟读是怎么实现的
 
-> 项目**没有使用讯飞（iFlytek）或任何第三方语音 API**，全部走浏览器原生 Web Speech API，跑在用户浏览器里；服务端不参与，也不保存音频。
+> 说明：**主干 `main` 没有使用讯飞**，跟读走浏览器原生 Web Speech API；另有一个**未合并的暂存分支 `feature/voice-iflytek`** 实现了讯飞语音评测/实时转写（见 9.2）。两种方式都不在服务端保存音频。
 
+### 9.1 main（当前主干）：浏览器原生 Web Speech API
 - **朗读 / 听力（TTS）**：`SpeechSynthesis`，见 [`frontend/src/utils/speech.js`](./frontend/src/utils/speech.js)。优先选**本地英文声音**（如 Edge 的 Zira），避免在线声音卡顿。
 - **跟读（识别）**：`SpeechRecognition`，见 `frontend/src/components/PronunciationGame.vue`、`MicRead.vue`。Chrome/Edge 底层用**谷歌在线识别**，需要 HTTPS 且能访问谷歌 —— **国内网络通常不可用**，所以跟读在本地/公网基本用不了；其它题型不受影响。
 - **安全上下文**：`getUserMedia`（麦克风）、`SpeechRecognition`、Service Worker、Web Push 都要求 **HTTPS**（`localhost` 也算安全上下文）。
-- 若要让跟读在国内稳定可用，需要另接国内语音服务（如讯飞），那属于新增功能、需要 API Key，**目前没有做**。
+
+### 9.2 暂存分支 `feature/voice-iflytek`（未合并主干）：接入讯飞
+- 后端 [`backend/app/services/iflytek.py`](./backend/app/services/iflytek.py)：封装讯飞 **ISE 语音评测**（`https://api.xfyun.cn/v1/service/v1/ise`）与 **IAT 实时转写**（`wss://iat-api.xfyun.cn/v2/iat`，RFC1123 时间 + HMAC-SHA256 鉴权）。
+- `backend/app/routers/pronunciation.py`：新增 WebSocket，把浏览器分片音频转发讯飞；`MicRead.vue` + `frontend/public/pcm-worklet.js` 负责采集。
+- 配置项：`IFLYTEK_APP_ID / IFLYTEK_API_KEY / IFLYTEK_API_SECRET / IFLYTEK_ENABLED`；**未配置 key 时自动走 mock**，不配也能演示。
+- 该分支**尚未合并、也未推送**；如需启用讯飞，需先合并该分支并填写 key。
