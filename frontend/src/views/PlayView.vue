@@ -368,7 +368,8 @@ async function onSubmit(payload) {
       else sfxBuzz()
     }
 
-    await progress.fetchProgress()
+    // 不阻塞反馈：公网隧道下单次请求约 1 秒，这里不再 await /progress（HUD 异步刷新即可）
+    progress.fetchProgress().catch(() => {})
     forgetInHistory(answeredId)
     submitting.value = false
 
