@@ -32,8 +32,8 @@ $FrontendDir = Join-Path $Root 'frontend'
 $LogDir      = Join-Path $Root '.logs'
 
 $BackendPort  = 8000
-$FrontendPort = 5173   # HTTP  - desktop
-$MobilePort   = 5174   # HTTPS - phone
+$FrontendPort = 5273   # HTTP  - desktop
+$MobilePort   = 5274   # HTTPS - phone
 
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 
@@ -93,6 +93,19 @@ function Get-PortOwner($port) {
     }
 }
 
+function Rotate-Log($path) {
+    if (Test-Path -LiteralPath $path) {
+        Move-Item -LiteralPath $path -Destination "$path.prev" -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Write-LogTail($path, $lines = 25) {
+    if (Test-Path -LiteralPath $path) {
+        Write-Host ("  --- " + $path + " (tail) ---") -ForegroundColor DarkGray
+        Get-Content -LiteralPath $path -Tail $lines -ErrorAction SilentlyContinue | ForEach-Object { Write-Host ("    " + $_) -ForegroundColor Red }
+    }
+}
+
 # ---------------- PostgreSQL ----------------
 function Start-Postgres {
     if (Test-Port 5432) { Write-Ok 'PostgreSQL already running (5432)'; return }
@@ -110,6 +123,8 @@ function Start-Postgres {
     }
 
     Write-Step 'starting PostgreSQL ...'
+    # Log rotation: keep the previous run as .prev so crash info isn't overwritten.
+    Rotate-Log $PgLog
     # Use Start-Process with file redirection, never a pipeline. postgres
     # inherits the parent's stdout handle, so piping would keep the pipeline
     # open forever and hang this script.
@@ -120,7 +135,11 @@ function Start-Postgres {
         -WindowStyle Hidden | Out-Null
 
     if (Wait-Port 5432 30) { Write-Ok 'PostgreSQL started (5432)' }
-    else { Write-Err2 'PostgreSQL failed to start, see .logs\pg_start.err.log and D:\PostgreSQL\log\server.log' }
+    else {
+        Write-Err2 'PostgreSQL failed to start'
+        Write-LogTail (Join-Path $LogDir 'pg_start.err.log')
+        Write-LogTail $PgLog
+    }
 }
 
 function Stop-Postgres {
@@ -143,15 +162,25 @@ function Start-Backend {
     if (-not (Test-Path $python)) { Write-Err2 "venv not found: $python"; return }
 
     Write-Step 'starting backend ...'
+    # Unbuffered output so crash logs are not lost when the process is killed.
+    $env:PYTHONUNBUFFERED = '1'
+    $backendOut = Join-Path $LogDir 'backend.out.log'
+    $backendErr = Join-Path $LogDir 'backend.err.log'
+    Rotate-Log $backendOut
+    Rotate-Log $backendErr
     Start-Process -FilePath $python `
         -ArgumentList '-m', 'uvicorn', 'app.main:app', '--host', '0.0.0.0', '--port', "$BackendPort" `
         -WorkingDirectory $BackendDir `
-        -RedirectStandardOutput (Join-Path $LogDir 'backend.out.log') `
-        -RedirectStandardError  (Join-Path $LogDir 'backend.err.log') `
+        -RedirectStandardOutput $backendOut `
+        -RedirectStandardError  $backendErr `
         -WindowStyle Hidden | Out-Null
 
     if (Wait-Port $BackendPort 40) { Write-Ok "backend started (http://localhost:$BackendPort)" }
-    else { Write-Err2 'backend failed, see .logs\backend.err.log' }
+    else {
+        Write-Err2 'backend failed to start'
+        Write-LogTail $backendErr
+        Write-LogTail $backendOut
+    }
 }
 
 function Stop-Backend {
@@ -175,15 +204,23 @@ function Start-Frontend {
     } elseif ($owner) {
         Write-Err2 "port $FrontendPort is taken by ANOTHER program (pid $($owner.Pid)): $($owner.CommandLine)"
     } else {
-        Write-Step 'starting frontend (http 5173) ...'
+        Write-Step 'starting frontend (http 5273) ...'
+        $feOut = Join-Path $LogDir 'frontend.out.log'
+        $feErr = Join-Path $LogDir 'frontend.err.log'
+        Rotate-Log $feOut
+        Rotate-Log $feErr
         Start-Process -FilePath 'cmd.exe' `
             -ArgumentList '/c', 'npm run dev' `
             -WorkingDirectory $FrontendDir `
-            -RedirectStandardOutput (Join-Path $LogDir 'frontend.out.log') `
-            -RedirectStandardError  (Join-Path $LogDir 'frontend.err.log') `
+            -RedirectStandardOutput $feOut `
+            -RedirectStandardError  $feErr `
             -WindowStyle Hidden | Out-Null
         if (Wait-Port $FrontendPort 60) { Write-Ok "frontend(desktop) started (http://localhost:$FrontendPort)" }
-        else { Write-Err2 'frontend(desktop) failed, see .logs\frontend.err.log' }
+        else {
+            Write-Err2 'frontend(desktop) failed to start'
+            Write-LogTail $feErr
+            Write-LogTail $feOut
+        }
     }
 
     $mobileOwner = Get-PortOwner $MobilePort
@@ -192,15 +229,23 @@ function Start-Frontend {
     } elseif ($mobileOwner) {
         Write-Err2 "port $MobilePort is taken by ANOTHER program (pid $($mobileOwner.Pid)): $($mobileOwner.CommandLine)"
     } else {
-        Write-Step 'starting frontend (https 5174) ...'
+        Write-Step 'starting frontend (https 5274) ...'
+        $mOut = Join-Path $LogDir 'mobile.out.log'
+        $mErr = Join-Path $LogDir 'mobile.err.log'
+        Rotate-Log $mOut
+        Rotate-Log $mErr
         Start-Process -FilePath 'cmd.exe' `
             -ArgumentList '/c', "set WP_HTTPS=1&& set WP_PORT=$MobilePort&& npm run dev" `
             -WorkingDirectory $FrontendDir `
-            -RedirectStandardOutput (Join-Path $LogDir 'mobile.out.log') `
-            -RedirectStandardError  (Join-Path $LogDir 'mobile.err.log') `
+            -RedirectStandardOutput $mOut `
+            -RedirectStandardError  $mErr `
             -WindowStyle Hidden | Out-Null
         if (Wait-Port $MobilePort 60) { Write-Ok "frontend(mobile) started (https://<LAN-IP>:$MobilePort)" }
-        else { Write-Err2 'frontend(mobile) failed, see .logs\mobile.err.log' }
+        else {
+            Write-Err2 'frontend(mobile) failed to start'
+            Write-LogTail $mErr
+            Write-LogTail $mOut
+        }
     }
 }
 

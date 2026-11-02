@@ -3,7 +3,7 @@
   Word Planet - public demo tunnel
   Cloudflare quick tunnel  +  local Basic Auth "password gate"
 
-      browser --https--> trycloudflare --http--> 127.0.0.1:8080 (gate) --> 127.0.0.1:5173 (vite)
+      browser --https--> trycloudflare --http--> 127.0.0.1:8080 (gate) --> 127.0.0.1:5273 (vite)
                                                                      \--> /api proxy --> 127.0.0.1:8000
 
   Usage (from project root):
@@ -49,7 +49,7 @@ $UrlFile     = Join-Path $RunDir 'tunnel-url.txt'
 $ProxyScript = Join-Path $ToolsDir 'auth-proxy.mjs'
 $Cloudflared = Join-Path $ToolsDir 'bin\cloudflared.exe'
 
-$FrontendPort = 5173
+$FrontendPort = 5273
 $BackendPort  = 8000
 $GatePort     = 8080
 $CfMetrics    = 20242
@@ -242,7 +242,7 @@ function Do-Start {
     Write-Host '=== public demo tunnel: start ==='
 
     if (-not (Test-Port $FrontendPort)) {
-        Write-Host '  [!] 前端 5173 没在运行，请先启动开发栈：'
+        Write-Host '  [!] 前端 5273 没在运行，请先启动开发栈：'
         Write-Host '        .\dev.ps1 start'
         Write-Host '      然后再运行：.\tools\tunnel.ps1 start'
         return
@@ -425,7 +425,7 @@ function Do-Status {
     if ($cfRec -and $cfRec.pid) { $cfAlive = Test-OwnedProcess $cfRec.pid 'cloudflared' $cfRec.startedAt }
     if (-not $cfAlive -and (Test-Port $CfMetrics)) { $cfAlive = $true }
 
-    Write-Host ("  frontend 5173 : {0}" -f $(if (Test-Port $FrontendPort) { 'RUNNING' } else { 'STOPPED' }))
+    Write-Host ("  frontend 5273 : {0}" -f $(if (Test-Port $FrontendPort) { 'RUNNING' } else { 'STOPPED' }))
     Write-Host ("  backend  8000 : {0}" -f $(if (Test-Port $BackendPort) { 'RUNNING' } else { 'STOPPED' }))
     Write-Host ("  auth gate 8080: {0}{1}" -f $(if (Test-Port $GatePort) { 'RUNNING' } else { 'STOPPED' }), $(if ($gateRec -and $gateRec.pid) { " (PID $($gateRec.pid))" } else { '' }))
     Write-Host ("  cloudflared   : {0}{1}" -f $(if ($cfAlive) { 'RUNNING' } else { 'STOPPED' }), $(if ($cfRec -and $cfRec.pid) { " (PID $($cfRec.pid))" } else { '' }))

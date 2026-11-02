@@ -14,7 +14,10 @@
 
     <span class="gh-grow" />
 
-    <span class="gh-prog">{{ Math.min(done + 1, setTotal || 15) }} / {{ setTotal || 15 }}</span>
+    <span class="gh-prog">
+      <span class="gh-prog-line">本套：已做 {{ done }} 道 · 未做 {{ (setTotal || 15) - done }} 道 · 共 {{ setTotal || 15 }} 道</span>
+      <span class="gh-prog-line dim">本星球：已做 {{ kpDoneSets }} 套 · 未做 {{ kpTotalSets - kpDoneSets }} 套 · 共 {{ kpTotalSets }} 套</span>
+    </span>
 
     <span class="gh-segs">
       <i v-for="(s, i) in normalizedSegs" :key="i" :class="s" />
@@ -35,6 +38,8 @@ const props = defineProps({
   setNo: { type: Number, default: 1 },
   setTotal: { type: Number, default: 15 },
   done: { type: Number, default: 0 },
+  kpTotalSets: { type: Number, default: 0 },
+  kpDoneSets: { type: Number, default: 0 },
   // 15 段：'ok' | 'no' | 'cur' | ''
   segs: { type: Array, default: () => [] },
   // null = 纯练星球，不显示花
@@ -78,7 +83,9 @@ const normalizedSegs = computed(() => {
 }
 .gh-name { color: var(--wp2-muted); font-weight: 800; white-space: nowrap; }
 .gh-grow { flex: 1; }
-.gh-prog { color: var(--wp2-dim); font-weight: 800; }
+.gh-prog { color: var(--wp2-dim); font-weight: 800; display: flex; flex-direction: column; line-height: 1.3; text-align: right; }
+.gh-prog-line { white-space: nowrap; }
+.gh-prog-line.dim { opacity: 0.72; font-size: 11px; }
 .gh-segs { display: flex; gap: 3px; }
 .gh-segs i {
   width: 8px; height: 14px; border-radius: 3px;

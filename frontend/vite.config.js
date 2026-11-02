@@ -4,17 +4,17 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 
 /**
  * 两种启动模式：
- *   默认（HTTP，端口 5173）—— 电脑用。http://localhost 属于安全上下文，
+ *   默认（HTTP，端口 5273）—— 电脑用。http://localhost 属于安全上下文，
  *                              麦克风 / Service Worker 在这台机器上照样可用。
- *   WP_HTTPS=1（HTTPS，端口 5174）—— 手机用。局域网 IP 走 http 不是安全上下文，
+ *   WP_HTTPS=1（HTTPS，端口 5274）—— 手机用。局域网 IP 走 http 不是安全上下文，
  *                              必须 https，浏览器会提示自签证书，选择继续访问。
  */
 const useHttps = process.env.WP_HTTPS === '1'
-const port = Number(process.env.WP_PORT || (useHttps ? 5174 : 5173))
+const port = Number(process.env.WP_PORT || (useHttps ? 5274 : 5273))
 
 export default defineConfig({
   plugins: useHttps ? [vue(), basicSsl()] : [vue()],
-  // 电脑(5173)和手机(5174)两个 dev 实例会同时运行；若共用 node_modules/.vite 会互相
+  // 电脑(5273)和手机(5274)两个 dev 实例会同时运行；若共用 node_modules/.vite 会互相
   // 抢占依赖预构建，导致 deps 反复停留在 deps_temp_* 而报 504 Outdated Optimize Dep（整页空白）。
   // 故按模式各用独立缓存目录。
   cacheDir: useHttps ? 'node_modules/.vite-mobile' : 'node_modules/.vite-desktop',

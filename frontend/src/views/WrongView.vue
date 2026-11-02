@@ -43,6 +43,22 @@
           :value="item.knowledge_point_id"
         />
       </el-select>
+
+      <div v-if="selectedKp" style="margin-top: 12px">
+        <el-button type="primary" style="width: 100%; height: 44px" @click="startModulePractice">
+          错题强化
+        </el-button>
+      </div>
+
+      <div v-if="!selectedKp" style="margin-top: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+        <span class="muted">掌握度检测：</span>
+        <el-select v-model="recheckLimit" style="width: 110px">
+          <el-option :value="20" label="20 题" />
+          <el-option :value="30" label="30 题" />
+          <el-option :value="50" label="50 题" />
+        </el-select>
+        <el-button type="warning" @click="startRecheck">掌握度复测</el-button>
+      </div>
     </div>
 
     <div class="card">
@@ -78,6 +94,7 @@ const router = useRouter()
 const items = ref([])
 const summary = ref({ pending: 0, mastered: 0, by_knowledge_point: [] })
 const selectedKp = ref('')
+const recheckLimit = ref(20)
 
 onMounted(async () => {
   await loadSummary()
@@ -106,6 +123,15 @@ async function loadList() {
 
 function startPractice() {
   router.push({ path: '/practice', query: selectedKp.value ? { kp: selectedKp.value } : {} })
+}
+
+function startModulePractice() {
+  if (!selectedKp.value) return
+  router.push({ path: '/practice', query: { scope: 'pending', kp: selectedKp.value, limit: 20 } })
+}
+
+function startRecheck() {
+  router.push({ path: '/practice', query: { scope: 'mastered', limit: recheckLimit.value } })
 }
 </script>
 

@@ -100,6 +100,8 @@ class QuestionNextResponse(BaseModel):
     set_total: int = 15
     set_done: int = 0
     knowledge_point_name: str = ""
+    kp_total_sets: int = 0
+    kp_done_sets: int = 0
 
 
 class TestQuestionOut(BaseModel):

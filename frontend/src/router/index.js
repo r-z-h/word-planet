@@ -16,6 +16,7 @@ const routes = [
   { path: '/level-test', component: () => import('../views/LevelTestView.vue') },
   { path: '/result', component: () => import('../views/ResultView.vue') },
   { path: '/practice', component: () => import('../views/PracticeView.vue') },
+  { path: '/review', component: () => import('../views/ReviewView.vue') },
   { path: '/words', component: () => import('../views/WordsView.vue') },
   { path: '/wrong', component: () => import('../views/WrongView.vue') },
   { path: '/achievements', component: () => import('../views/AchievementsView.vue') },

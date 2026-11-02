@@ -57,7 +57,7 @@
           type="primary"
           size="large"
           style="width: 100%; margin-top: 16px"
-          @click="next"
+          @click="advance"
         >
           下一题
         </el-button>
@@ -85,8 +85,15 @@ const kpName = ref('')
 const done = ref(false)
 
 const kpId = route.query.kp || ''
+const scope = route.query.scope || ''
+const batchMode = ref(!!scope)
+const batchItems = ref([])
+const batchIdx = ref(0)
 
-onMounted(next)
+onMounted(() => {
+  if (batchMode.value) loadBatch()
+  else next()
+})
 
 function newKey() {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID().replace(/-/g, '')
@@ -120,17 +127,68 @@ async function onSubmit(answer) {
   if (submitting.value || !question.value) return
   submitting.value = true
   try {
-    const { data } = await http.post('/practice/result', {
-      question_id: question.value.id,
-      answer,
-      idempotency_key: newKey()
-    })
+    let data
+    if (batchMode.value && scope === 'mastered') {
+      ;({ data } = await http.post('/practice/recheck', {
+        question_id: question.value.id,
+        answer
+      }))
+    } else {
+      ;({ data } = await http.post('/practice/result', {
+        question_id: question.value.id,
+        answer,
+        idempotency_key: newKey()
+      }))
+    }
     feedback.value = data
     remaining.value = Math.max(remaining.value - 1, 0)
   } catch (e) {
     ElMessage.error(apiError(e))
   } finally {
     submitting.value = false
+  }
+}
+
+async function loadBatch() {
+  feedback.value = null
+  loading.value = true
+  try {
+    const { data } = await http.get('/practice/batch', {
+      params: {
+        scope,
+        knowledge_point_id: kpId || undefined,
+        limit: Number(route.query.limit || 20)
+      }
+    })
+    batchItems.value = data.items || []
+    batchIdx.value = 0
+    if (!batchItems.value.length) {
+      done.value = true
+    } else {
+      question.value = batchItems.value[0]
+      remaining.value = batchItems.value.length
+      done.value = false
+    }
+  } catch (e) {
+    ElMessage.error(apiError(e))
+  } finally {
+    loading.value = false
+  }
+}
+
+function advance() {
+  feedback.value = null
+  if (batchMode.value) {
+    if (batchIdx.value < batchItems.value.length - 1) {
+      batchIdx.value += 1
+      question.value = batchItems.value[batchIdx.value]
+      remaining.value = batchItems.value.length - batchIdx.value
+    } else {
+      question.value = null
+      done.value = true
+    }
+  } else {
+    next()
   }
 }
 </script>

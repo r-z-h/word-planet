@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     vapid_subject: str = "mailto:admin@example.com"
 
 
-    cors_origins: str = "http://localhost:5173,https://localhost:5173"
+    cors_origins: str = "http://localhost:5273,https://localhost:5273"
 
     # 公网安全开关（本机开发默认关闭；生产 .env 打开）
     require_captcha: bool = False

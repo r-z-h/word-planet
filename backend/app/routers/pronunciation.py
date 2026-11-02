@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -183,3 +184,35 @@ def submit_pronunciation(
         answer_text=answer_text(question),
         word=word_payload(db, question),
     )
+
+
+class ReviewPronRequest(BaseModel):
+    word_id: str
+    is_correct: bool
+
+
+@router.post("/review")
+def review_pronunciation(
+    payload: ReviewPronRequest,
+    user: User = Depends(require_tested),
+    db: Session = Depends(get_db),
+):
+    """跟读复习判题：只返回对错/义项，**不写任何数据**（不推进、不发奖励、不记错题）。"""
+    try:
+        qid = uuid.UUID(payload.word_id)
+    except (ValueError, AttributeError):
+        raise HTTPException(status_code=422, detail="word_id 非法")
+    question = db.get(Question, qid)
+    if question is None:
+        raise HTTPException(status_code=404, detail="题目不存在")
+    if question.question_type != "pronunciation":
+        raise HTTPException(
+            status_code=409,
+            detail={"detail": "不是跟读题", "code": "WRONG_ENDPOINT"},
+        )
+    return {
+        "is_correct": bool(payload.is_correct),
+        "correct_answer": answer_text(question),
+        "answer_text": answer_text(question),
+        "word": word_payload(db, question),
+    }

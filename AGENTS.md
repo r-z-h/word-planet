@@ -17,20 +17,20 @@
 ## 2. 怎么跑起来
 
 ```powershell
-.\dev.ps1 start      # PostgreSQL + 后端(8000) + 前端(5173 HTTP / 5174 HTTPS)
+.\dev.ps1 start      # PostgreSQL + 后端(8000) + 前端(5273 HTTP / 5274 HTTPS)
 .\dev.ps1 stop
 .\dev.ps1 status
 ```
 
-也可双击 `start.bat` / `stop.bat` / `status.bat`（`.ps1` 在本机没有文件关联）。
+日常用**双击根目录 `服务管理.bat`**（统一菜单：1启动 2停止 3重启 4状态 5打开网页 6查看报错 7环境检查 0退出）；命令行仍可用 `dev.ps1 start|stop|restart|status`。旧的 `start.bat`/`stop.bat`/`status.bat` 已移除。
 
 - PostgreSQL 是**便携版**（`D:\PostgreSQL`），**不会开机自启**，重启电脑后必须先 `dev.ps1 start`
 - 数据库连接、JWT、VAPID 都在 `backend/.env`（不入库）
-- 前端电脑用 `http://localhost:5173`；手机用 `https://<局域网IP>:5174`（自签证书）
+- 前端电脑用 `http://localhost:5273`；手机用 `https://<局域网IP>:5274`（自签证书）
 
 ### 公网演示（临时隧道 + 口令门，方案②）
 
-给家人/朋友临时演示时，把本机 5173 发布到公网：
+给家人/朋友临时演示时，把本机 5273 发布到公网：
 
 ```powershell
 .\tools\tunnel.ps1 start     # 启动口令门(8080)+cloudflared，打印 公网 URL / 用户名 / 密码
@@ -103,7 +103,7 @@ cd backend
   再跑 `import_dictionary.py`；它是 `DELETE` 后重建整表，别只改库
 - **词典英文释义**：ECDICT 里是字面量 `\n`，`import_dictionary.py` 导入时会转成真换行，别在库里手改
 - **测试库**：pytest 用 `word_planet_test`，会自动跑 `seed.py` + `seed_words.py`，需要 `data/build/words.json` 存在
-- **页面空白只剩标题（浏览器标签是项目名）**：多为前端 Vite 依赖预构建缓存坏了（控制台 `504 Outdated Optimize Dep`）。电脑 5173 与手机 5174 两个 dev 实例曾共用 `node_modules/.vite` 互相抢占，导致 `deps` 只留下 `deps_temp_*`；已在 `frontend/vite.config.js` 按模式分 `cacheDir`（`.vite-desktop` / `.vite-mobile`）。再遇空白：删 `frontend/node_modules/.vite*` 后重启前端。
+- **页面空白只剩标题（浏览器标签是项目名）**：多为前端 Vite 依赖预构建缓存坏了（控制台 `504 Outdated Optimize Dep`）。电脑 5273 与手机 5274 两个 dev 实例曾共用 `node_modules/.vite` 互相抢占，导致 `deps` 只留下 `deps_temp_*`；已在 `frontend/vite.config.js` 按模式分 `cacheDir`（`.vite-desktop` / `.vite-mobile`）。再遇空白：删 `frontend/node_modules/.vite*` 后重启前端。
 - 本机无 WSL、无 Docker；PostgreSQL 用便携版
 
 ## 8. 改代码前的规矩

@@ -1,7 +1,7 @@
 // Word Planet 公网演示用的「口令门」反向代理（零依赖，仅用 Node 内置模块）。
 //
 // 作用：监听 127.0.0.1:8080，先让访客通过自带登录页验证口令，再把请求（含
-// WebSocket/HMR）原样转发给本机 Vite dev server 127.0.0.1:5173。cloudflared 指向 8080。
+// WebSocket/HMR）原样转发给本机 Vite dev server 127.0.0.1:5273。cloudflared 指向 8080。
 //
 // 为什么不用浏览器原生 HTTP Basic 弹框（重要）：
 //   手机 / 微信内置浏览器对 401 + WWW-Authenticate 的处理有缺陷：输错口令后会把错误凭据
@@ -19,7 +19,7 @@
 //   WP_PROXY_USER      用户名（默认 family）
 //   WP_PROXY_PASS      密码（必填，为空拒绝启动）
 //   WP_PROXY_PORT      监听端口（默认 8080）
-//   WP_PROXY_UPSTREAM  上游端口（默认 5173）
+//   WP_PROXY_UPSTREAM  上游端口（默认 5273）
 
 import http from 'node:http'
 import net from 'node:net'
@@ -29,7 +29,7 @@ const USER = process.env.WP_PROXY_USER || 'family'
 const PASS = process.env.WP_PROXY_PASS || ''
 const PORT = Number(process.env.WP_PROXY_PORT || 8080)
 const UP_HOST = '127.0.0.1'
-const UP_PORT = Number(process.env.WP_PROXY_UPSTREAM || 5173)
+const UP_PORT = Number(process.env.WP_PROXY_UPSTREAM || 5273)
 
 const COOKIE_NAME = 'wp_gate'
 const COOKIE_MAX_AGE = 7 * 24 * 3600 // 7 天

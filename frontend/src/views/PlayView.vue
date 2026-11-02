@@ -3,6 +3,22 @@
     <StarField v-if="gameMode" />
     <SpaceBackdrop v-if="gameMode" />
 
+    <div
+      v-if="finished || reviewDone"
+      style="position: fixed; inset: 0; background: rgba(16,12,30,.82); display: grid; place-items: center; z-index: 60; padding: 20px"
+    >
+      <div style="background: #2a2142; border: 2px solid rgba(255,232,180,.3); border-radius: 18px; padding: 36px 28px; text-align: center; max-width: 460px">
+        <div style="font-size: 52px">🌟</div>
+        <h2 class="title" style="margin: 6px 0">{{ reviewDone ? '复习完成' : '本星球已完成' }}</h2>
+        <p v-if="!reviewDone" class="muted">本星球：已做 {{ kpDoneSets }} 套 · 未做 {{ kpTotalSets - kpDoneSets }} 套 · 共 {{ kpTotalSets }} 套</p>
+        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 18px">
+          <el-button v-if="reviewDone" type="primary" size="large" @click="$router.push('/review')">再来一次</el-button>
+          <el-button v-else type="primary" size="large" @click="goReview">再练一次</el-button>
+          <el-button size="large" @click="$router.push('/home')">返回首页</el-button>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== 第二版关卡外壳（玩法 A / B） ===== -->
     <div v-if="gameMode" class="v2-shell">
       <GameHud
@@ -14,6 +30,8 @@
         :done="setDone"
         :segs="segs"
         :flowers="isPurePractice ? null : progress.setFlowers"
+        :kp-total-sets="kpTotalSets"
+        :kp-done-sets="kpDoneSets"
         @exit="askExit"
       />
       <div v-if="question" class="v2-body">
@@ -95,10 +113,10 @@
           <div style="font-weight: 700">{{ kp?.name || '加载中' }}</div>
           <div class="muted">
             {{ kp?.level }}<template v-if="setNo"> · 第 {{ setNo }} 套</template>
-            <template v-if="setTotal">
-              · 第 {{ Math.min(setDone + 1, setTotal) }} / {{ setTotal }} 题
-            </template>
-            <template v-else> · 还剩 {{ remaining }} 题</template>
+            <template v-if="setTotal"> · 本套：已做 {{ setDone }} 道 · 未做 {{ setTotal - setDone }} 道 · 共 {{ setTotal }} 道</template>
+          </div>
+          <div class="muted" style="font-size: 12px; margin-top: 2px">
+            本星球：已做 {{ kpDoneSets }} 套 · 未做 {{ kpTotalSets - kpDoneSets }} 套 · 共 {{ kpTotalSets }} 套
           </div>
         </div>
         <el-button text @click="goBack">返回</el-button>
@@ -170,7 +188,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import http, { apiError } from '../api/http'
 import { useProgressStore } from '../stores/progress'
@@ -187,7 +205,13 @@ import SpaceBackdrop from '../components/game/SpaceBackdrop.vue'
 import { sfxDing, sfxBuzz } from '../utils/sfx'
 
 const router = useRouter()
+const route = useRoute()
 const progress = useProgressStore()
+const reviewMode = ref(false)
+const reviewDone = ref(false)
+const reviewPlan = ref([])
+const reviewIdx = ref(0)
+const reviewQueue = ref([])
 
 const kp = ref(null)
 const question = ref(null)
@@ -201,6 +225,9 @@ const history = ref([])
 const setNo = ref(null)
 const setTotal = ref(0)
 const setDone = ref(0)
+const kpTotalSets = ref(0)
+const kpDoneSets = ref(0)
+const finished = ref(false)
 
 // ===== 第二版关卡状态 =====
 const planetRef = ref(null)
@@ -261,7 +288,16 @@ function flashRedAlert() {
   }
 }
 
-onMounted(load)
+onMounted(initRoute)
+
+async function initRoute() {
+  if (route.query.review === '1') {
+    reviewMode.value = true
+    await loadReviewStart()
+  } else {
+    await load()
+  }
+}
 
 async function load() {
   try {
@@ -278,7 +314,59 @@ async function load() {
   }
 }
 
+async function loadReviewStart() {
+  try {
+    const { data } = await http.get('/question/review/sets')
+    kp.value = { name: data.kp_name || '', question_type: '' }
+    kpTotalSets.value = data.total_sets || 0
+    kpDoneSets.value = data.done_sets || 0
+    const sel = route.query.set || 'all'
+    reviewPlan.value = sel === 'all' ? (data.sets || []).map((s) => s.set_no) : [Number(sel)]
+    reviewIdx.value = 0
+    reviewDone.value = false
+    await loadReviewSet()
+  } catch (e) {
+    ElMessage.error(apiError(e))
+  }
+}
+
+async function loadReviewSet() {
+  const sn = reviewPlan.value[reviewIdx.value]
+  if (sn == null) {
+    question.value = null
+    reviewDone.value = true
+    return
+  }
+  const { data } = await http.get('/question/review/questions', { params: { set_no: sn } })
+  reviewQueue.value = data.questions || []
+  setNo.value = sn
+  setTotal.value = reviewQueue.value.length
+  setDone.value = reviewQueue.value.length
+  heart.value = 3
+  await reviewNext()
+}
+
+async function reviewNext() {
+  locked.value = false
+  feedback.value = null
+  if (reviewQueue.value.length) {
+    const q = reviewQueue.value.shift()
+    question.value = q
+    pronMode.value = q.question_type === 'pronunciation'
+    if (q.question_type === 'listening') heart.value = 3
+    return
+  }
+  reviewIdx.value += 1
+  if (reviewIdx.value < reviewPlan.value.length) {
+    await loadReviewSet()
+  } else {
+    question.value = null
+    reviewDone.value = true
+  }
+}
+
 async function next(excludeId = '') {
+  if (reviewMode.value) return reviewNext()
   locked.value = false
   feedback.value = null
   try {
@@ -294,11 +382,14 @@ async function next(excludeId = '') {
       setTotal.value = data.set_total
       setDone.value = data.set_done
     }
+    kpTotalSets.value = data.kp_total_sets || kpTotalSets.value
+    kpDoneSets.value = data.kp_done_sets || kpDoneSets.value
   } catch (e) {
     const code = e?.response?.data?.detail?.code
     if (code === 'KNOWLEDGE_POINT_FINISHED' || code === 'SET_FINISHED') {
-      ElMessage.success('这个模块已经学完了，去试试别的星球吧')
-      router.replace('/home')
+      question.value = null
+      finished.value = true
+      await loadReviewInfo()
       return
     }
     ElMessage.error(apiError(e))
@@ -342,7 +433,26 @@ async function onSubmit(payload) {
     let correct = false
     let detail = null
 
-    if (pronMode.value) {
+    if (reviewMode.value) {
+      let data
+      if (typeof payload === 'string') {
+        ;({ data } = await http.post('/answer/review', {
+          question_id: question.value.id,
+          answer: payload
+        }))
+        correct = data.is_correct
+      } else {
+        ;({ data } = await http.post('/pronunciation/review', {
+          word_id: question.value.id,
+          is_correct: !!payload.is_correct
+        }))
+        correct = !!payload.is_correct
+      }
+      advanced = false
+      detail = data
+      if (correct) ElMessage.success('答对了')
+      else ElMessage.error('答错了')
+    } else if (pronMode.value) {
       const { data } = await http.post('/pronunciation/result', {
         word_id: question.value.id,
         is_correct: payload.is_correct,
@@ -369,7 +479,7 @@ async function onSubmit(payload) {
     }
 
     // 不阻塞反馈：公网隧道下单次请求约 1 秒，这里不再 await /progress（HUD 异步刷新即可）
-    progress.fetchProgress().catch(() => {})
+    if (!reviewMode.value) progress.fetchProgress().catch(() => {})
     forgetInHistory(answeredId)
     submitting.value = false
 
@@ -482,12 +592,28 @@ function nextAfterFeedback() {
   next()
 }
 
+async function loadReviewInfo() {
+  try {
+    const { data } = await http.get('/question/review/sets')
+    kpTotalSets.value = data.total_sets || 0
+    kpDoneSets.value = data.done_sets || 0
+    if (!kp.value && data.kp_name) kp.value = { name: data.kp_name }
+  } catch {
+    /* ignore */
+  }
+}
+
+function goReview() {
+  router.push('/review')
+}
+
 function goBack() {
   router.push('/home')
 }
 
 // 有题没做完就离开时要提示；进度与当前题都在服务端，下次进来会恢复到这一题
 onBeforeRouteLeave(async () => {
+  if (reviewMode.value) return true
   // 已答过（正在看义项面板）或已经跳结算页时不需要再拦
   if (leavingByResult.value || !question.value || feedback.value) return true
   try {

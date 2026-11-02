@@ -1,7 +1,8 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from pydantic import BaseModel
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -194,4 +195,105 @@ def practice_summary(user: User = Depends(require_tested), db: Session = Depends
         "pending": sum(i["pending"] for i in items),
         "mastered": sum(i["mastered"] for i in items),
         "by_knowledge_point": items,
+    }
+
+
+# ---------------- 批量取题（错题强化 / 掌握度检测） ----------------
+
+class RecheckRequest(BaseModel):
+    question_id: str
+    answer: str
+
+
+@router.get("/batch")
+def practice_batch(
+    scope: str = "pending",
+    knowledge_point_id: str | None = None,
+    limit: int = 20,
+    user: User = Depends(require_tested),
+    db: Session = Depends(get_db),
+):
+    """一次取一批错题：scope=pending(待练，按模块) / mastered(已掌握，不分模块)。随机、去重、上限50。"""
+    scope = "mastered" if scope == "mastered" else "pending"
+    try:
+        n = int(limit)
+    except (TypeError, ValueError):
+        n = 20
+    n = max(1, min(n, 50))
+
+    kp_id = None
+    if knowledge_point_id:
+        try:
+            kp_id = uuid.UUID(knowledge_point_id)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="knowledge_point_id 非法")
+
+    base = (
+        select(WrongQuestion, Question, KnowledgePoint)
+        .join(Question, Question.id == WrongQuestion.question_id)
+        .join(KnowledgePoint, KnowledgePoint.id == Question.knowledge_point_id)
+        .where(WrongQuestion.user_id == user.id)
+    )
+    if scope == "pending":
+        base = base.where(WrongQuestion.consecutive_correct < MASTERY_STREAK)
+        if kp_id is not None:
+            base = base.where(Question.knowledge_point_id == kp_id)
+    else:
+        base = base.where(WrongQuestion.consecutive_correct >= MASTERY_STREAK)
+        if kp_id is not None:
+            base = base.where(Question.knowledge_point_id == kp_id)
+
+    rows = db.execute(base.order_by(func.random()).limit(n)).all()
+    items = [
+        {
+            "id": str(q.id),
+            "question_type": q.question_type,
+            "stem": q.stem,
+            "options": q.options,
+            "explanation": q.explanation,
+            "error_count": w.error_count,
+            "consecutive_correct": w.consecutive_correct,
+            "knowledge_point_name": kp.name,
+        }
+        for w, q, kp in rows
+    ]
+    return {"scope": scope, "count": len(items), "items": items}
+
+
+@router.post("/recheck")
+def practice_recheck(
+    payload: RecheckRequest,
+    user: User = Depends(require_tested),
+    db: Session = Depends(get_db),
+):
+    """掌握度检测判题：答错→回炉待练，答对→保持掌握；不发奖励、不计连击/每日任务、不写 Attempt。"""
+    try:
+        qid = uuid.UUID(payload.question_id)
+    except (ValueError, AttributeError):
+        raise HTTPException(status_code=422, detail="question_id 非法")
+    q = db.get(Question, qid)
+    if q is None:
+        raise HTTPException(status_code=404, detail="题目不存在")
+
+    record = db.execute(
+        select(WrongQuestion).where(
+            WrongQuestion.user_id == user.id, WrongQuestion.question_id == qid
+        )
+    ).scalar_one_or_none()
+    if record is None:
+        raise HTTPException(
+            status_code=409,
+            detail={"detail": "这道题不在错题本里", "code": "NOT_IN_WRONG_BOOK"},
+        )
+
+    correct = judge_correct(q, payload.answer or "")
+    update_wrong_book(db, user.id, q.id, correct)
+    db.commit()
+    db.refresh(record)
+    return {
+        "is_correct": correct,
+        "correct_answer": str(q.answer),
+        "explanation": q.explanation,
+        "consecutive_correct": record.consecutive_correct,
+        "mastered": record.consecutive_correct >= MASTERY_STREAK,
     }

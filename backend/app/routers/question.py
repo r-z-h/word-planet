@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -13,8 +14,10 @@ from ..services.judge import is_correct as judge_correct
 from ..services.lesson import (
     current_set_no,
     is_set_complete,
+    kp_set_numbers,
     mark_set_complete,
     resolve_current_kp,
+    set_summary,
 )
 from ..services.words import answer_text, word_payload
 from ..services import tiles as tiles_service
@@ -138,6 +141,7 @@ def next_question(
             tiles = None
             if question.question_type == "spelling":
                 tiles = tiles_service.tiles_for(question.id, str(question.answer))
+            summary = set_summary(db, user.id, kp)
             return QuestionNextResponse(
                 question={
                     "id": str(question.id),
@@ -151,6 +155,8 @@ def next_question(
                 set_total=total,
                 set_done=done,
                 knowledge_point_name=kp.name,
+                kp_total_sets=summary["total_sets"],
+                kp_done_sets=summary["completed_sets"],
             )
 
         # 这一套已经没有未答的题：记为完成，继续下一套
@@ -236,3 +242,78 @@ def submit_answer(
         answer_text=answer_text(question),
         word=word_payload(db, question),
     )
+
+
+# ---------------- 复习（再练一次）：只判题、不写任何数据 ----------------
+
+class ReviewAnswerRequest(BaseModel):
+    question_id: str
+    answer: str
+
+
+@router.get("/question/review/sets")
+def review_sets(user: User = Depends(require_tested), db: Session = Depends(get_db)):
+    """当前知识点有哪些套（供“再练一次”选择套）。"""
+    kp = resolve_current_kp(db, user)
+    if kp is None:
+        raise HTTPException(status_code=409, detail={"detail": "没有当前知识点", "code": "NO_CURRENT_KNOWLEDGE_POINT"})
+    sets = []
+    for sn in kp_set_numbers(db, kp.id):
+        total = db.execute(
+            select(func.count()).select_from(Question).where(
+                Question.knowledge_point_id == kp.id, Question.set_no == sn
+            )
+        ).scalar_one()
+        sets.append({"set_no": sn, "total": int(total)})
+    summary = set_summary(db, user.id, kp)
+    return {
+        "kp_id": str(kp.id),
+        "kp_name": kp.name,
+        "sets": sets,
+        "total_sets": summary["total_sets"],
+        "done_sets": summary["completed_sets"],
+    }
+
+
+@router.get("/question/review/questions")
+def review_questions(set_no: int, user: User = Depends(require_tested), db: Session = Depends(get_db)):
+    """取某一套的全部题（随机打乱，不含答案），用于复习。"""
+    kp = resolve_current_kp(db, user)
+    if kp is None:
+        raise HTTPException(status_code=409, detail={"detail": "没有当前知识点", "code": "NO_CURRENT_KNOWLEDGE_POINT"})
+    qs = db.execute(
+        select(Question)
+        .where(Question.knowledge_point_id == kp.id, Question.set_no == set_no)
+        .order_by(func.random())
+    ).scalars().all()
+    items = []
+    for q in qs:
+        tiles = tiles_service.tiles_for(q.id, str(q.answer)) if q.question_type == "spelling" else None
+        items.append({
+            "id": str(q.id),
+            "question_type": q.question_type,
+            "stem": q.stem,
+            "options": q.options,
+            "knowledge_point_id": str(q.knowledge_point_id),
+            "tiles": tiles,
+        })
+    return {"kp_id": str(kp.id), "kp_name": kp.name, "set_no": set_no, "questions": items}
+
+
+@router.post("/answer/review")
+def answer_review(payload: ReviewAnswerRequest, user: User = Depends(require_tested), db: Session = Depends(get_db)):
+    """复习判题：返回对错/正确答案/义项，**不写任何数据**。"""
+    try:
+        qid = uuid.UUID(payload.question_id)
+    except (ValueError, AttributeError):
+        raise HTTPException(status_code=422, detail="question_id 非法")
+    q = db.get(Question, qid)
+    if q is None:
+        raise HTTPException(status_code=404, detail="题目不存在")
+    correct = judge_correct(q, payload.answer or "")
+    return {
+        "is_correct": correct,
+        "correct_answer": answer_text(q),
+        "answer_text": answer_text(q),
+        "word": word_payload(db, q),
+    }
