@@ -12,3 +12,4 @@ pywebpush
 APScheduler
 pytest
 httpx
+websockets

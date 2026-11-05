@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     vapid_private_key: str = ""
     vapid_subject: str = "mailto:admin@example.com"
 
+    # 讯飞语音评测 / 实时转写（未填 key 时自动走 mock，不影响功能演示）
+    iflytek_app_id: str = ""
+    iflytek_api_key: str = ""
+    iflytek_api_secret: str = ""
+    iflytek_enabled: bool = False
+
 
     cors_origins: str = "http://localhost:5273,https://localhost:5273"
 

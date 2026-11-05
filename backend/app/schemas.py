@@ -209,6 +209,7 @@ class MapPlanetOut(BaseModel):
     current_set: int | None = None
     medals: int = 0          # 该星球已获得徽记
     max_medals: int = 0      # 该星球徽记上限（= 套数）
+    mastered_sets: int = 0   # 该星球「完全掌握（全对）」的套数，用于提醒去兑换徽章
     pure: bool = False       # 纯练星球（不产奖励）
     is_complete: bool = False  # 纯练星球「已完成」
     locked: bool = False
@@ -230,6 +231,25 @@ class MapResponse(BaseModel):
     week_counts: list[int] = []  # 本周一→周日 每天作答数
     gate_ready: bool = False     # 本级是否已达能力测试门槛
     next_level: str | None = None
+
+
+class PlanetSetOut(BaseModel):
+    set_no: int
+    total_count: int = 0
+    flowers: int = 0            # 该套已拿到花的题数（含错题本补花）
+    is_complete: bool = False   # 该套是否已拿满 15 朵花（= 满套）
+    medals_granted: int = 0     # 该套是否已兑换徽章（0/1）
+    is_current: bool = False
+
+
+class PlanetSetsResponse(BaseModel):
+    knowledge_point_id: str
+    name: str
+    level: str
+    total_sets: int = 0
+    medals: int = 0
+    mastered_sets: int = 0
+    sets: list[PlanetSetOut] = []
 
 
 # ---------------------------------------------------------------- 三层奖励
@@ -390,6 +410,10 @@ class PracticeResultResponse(BaseModel):
     consecutive_correct: int = 0
     mastered: bool = False
     duplicated: bool = False
+    mastered_needed: int = 3        # 连对达到几次算掌握
+    counted: bool = True            # 本次答对是否计入连对（冷却期/答错为 False）
+    cooldown_remaining: int = 0     # 距下次可计入还差多少秒（0 表示无冷却）
+    flower_gained: bool = False     # 本次是否补到了 1 朵花
 
 
 # ---------------- 模块 / 套 / 能力测试 ----------------
@@ -403,6 +427,8 @@ class KpProgressOut(BaseModel):
     total_sets: int
     completed_sets: int
     current_set: int | None = None
+    medals: int = 0
+    mastered_sets: int = 0
     meets_gate: bool = False
 
 
@@ -410,6 +436,7 @@ class LessonOverview(BaseModel):
     level: str | None
     max_level: str | None
     required_sets: int
+    required_medals: int = 0
     knowledge_points: list[KpProgressOut]
     gate_ready: bool
     can_test: bool
@@ -474,3 +501,10 @@ class WordListResponse(BaseModel):
     total: int
     items: list[WordItemOut]
     has_more: bool
+
+class PronunciationScoreResponse(BaseModel):
+    score: int
+    stars: int
+    recognized: str = ""
+    source: str = "mock"
+    error: str | None = None
