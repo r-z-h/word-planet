@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="headphones kid">
+  <!-- hair back -->
+  <circle cx="32" cy="34" r="19" fill="#3b2a55"/>
+  <!-- face -->
+  <circle cx="32" cy="35" r="15.5" fill="#ffd9b3"/>
+  <!-- fringe -->
+  <path d="M16.5 32c1-9 7.5-14 15.5-14s14.5 5 15.5 14c-3-4-8-6-15.5-6s-12.5 2-15.5 6z" fill="#4b3470"/>
+  <!-- headphone band -->
+  <path d="M11 35a21 21 0 0 1 42 0" fill="none" stroke="#845ef7" stroke-width="5" stroke-linecap="round"/>
+  <!-- ear cups -->
+  <rect x="6.5" y="28" width="11" height="17" rx="5.5" fill="#5f3dc4"/>
+  <rect x="46.5" y="28" width="11" height="17" rx="5.5" fill="#5f3dc4"/>
+  <rect x="9" y="31" width="6" height="11" rx="3" fill="#9775fa"/>
+  <rect x="49" y="31" width="6" height="11" rx="3" fill="#9775fa"/>
+  <!-- eyes -->
+  <circle cx="26.5" cy="36.5" r="2.4" fill="#2b1b12"/>
+  <circle cx="37.5" cy="36.5" r="2.4" fill="#2b1b12"/>
+  <!-- blush -->
+  <circle cx="21.5" cy="41.5" r="2.1" fill="#ff9db4" opacity="0.85"/>
+  <circle cx="42.5" cy="41.5" r="2.1" fill="#ff9db4" opacity="0.85"/>
+  <!-- smile -->
+  <path d="M27 43.5q5 4 10 0" fill="none" stroke="#2b1b12" stroke-width="2" stroke-linecap="round"/>
+</svg>

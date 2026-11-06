@@ -1,4 +1,6 @@
 import uuid
+from datetime import datetime, timedelta, timezone
+from math import ceil
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -28,8 +30,12 @@ from ..services.attempts import (
     touch_streak,
 )
 from ..services.judge import is_correct as judge_correct
+from ..services import rewards
 
 router = APIRouter(prefix="/api/practice", tags=["practice"])
+
+# 防抢记：同一题两次「答对」至少间隔这么多分钟，才计下一次连对
+PRACTICE_COOLDOWN_MINUTES = 10
 
 
 def _wrong_pool(db: Session, user_id: uuid.UUID, kp_id: uuid.UUID | None):
@@ -85,6 +91,47 @@ def next_practice(
     )
 
 
+@router.get("/one", response_model=PracticeNextResponse)
+def one_practice(
+    question_id: str,
+    user: User = Depends(require_tested),
+    db: Session = Depends(get_db),
+):
+    """按题目 ID 取一道错题，用于错题本里「单独练这一题」。"""
+    try:
+        qid = uuid.UUID(question_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="question_id 非法")
+    question = db.get(Question, qid)
+    if question is None:
+        raise HTTPException(status_code=404, detail="题目不存在")
+    record = db.execute(
+        select(WrongQuestion).where(
+            WrongQuestion.user_id == user.id, WrongQuestion.question_id == qid
+        )
+    ).scalar_one_or_none()
+    if record is None:
+        raise HTTPException(
+            status_code=409,
+            detail={"detail": "这道题不在错题本里", "code": "NOT_IN_WRONG_BOOK"},
+        )
+    kp = db.get(KnowledgePoint, question.knowledge_point_id)
+    remaining = db.execute(_wrong_pool(db, user.id, None).limit(1000)).all().__len__()
+    return PracticeNextResponse(
+        question=PracticeQuestionOut(
+            id=str(question.id),
+            question_type=question.question_type,
+            stem=question.stem,
+            options=question.options,
+            explanation=question.explanation,
+            error_count=record.error_count,
+            consecutive_correct=record.consecutive_correct,
+            knowledge_point_name=kp.name if kp else "",
+        ),
+        remaining=remaining,
+    )
+
+
 @router.post("/result", response_model=PracticeResultResponse)
 def submit_practice(
     payload: PracticeResultRequest,
@@ -132,6 +179,17 @@ def submit_practice(
     correct = judge_correct(question, payload.answer)
     had_correct_today = had_correct_attempt_today(db, user.id) if correct else False
 
+    # 防抢记：取该题上一次「练习答对」的时间
+    prev_correct_at = db.execute(
+        select(func.max(Attempt.created_at)).where(
+            Attempt.user_id == user.id,
+            Attempt.question_id == question.id,
+            Attempt.question_type == "practice",
+            Attempt.is_correct.is_(True),
+        )
+    ).scalar_one_or_none()
+    now = datetime.now(timezone.utc)
+
     db.add(
         Attempt(
             user_id=user.id,
@@ -143,9 +201,41 @@ def submit_practice(
     )
     db.flush()
 
-    update_wrong_book(db, user.id, question.id, correct)
+    counted = False
+    cooldown_remaining = 0
+    if not correct:
+        record.error_count = (record.error_count or 0) + 1
+        record.consecutive_correct = 0
+        record.last_wrong_at = now
+    else:
+        too_soon = False
+        if prev_correct_at is not None:
+            prev = prev_correct_at
+            if prev.tzinfo is None:
+                prev = prev.replace(tzinfo=timezone.utc)
+            gap = timedelta(minutes=PRACTICE_COOLDOWN_MINUTES)
+            elapsed = now - prev
+            if elapsed < gap:
+                too_soon = True
+                cooldown_remaining = int(ceil((gap - elapsed).total_seconds()))
+        # 间隔太近：视为同一时间抢记，不累计连对（也不清零）
+        if not too_soon:
+            record.consecutive_correct = (record.consecutive_correct or 0) + 1
+            counted = True
+
+    flower_gained = False
+    # 连续答对达到阈值 → 补发该题 1 朵花（幂等，每题只补一次）；纯练星球不产花
+    kp = db.get(KnowledgePoint, question.knowledge_point_id)
+    if (
+        correct
+        and (record.consecutive_correct or 0) >= MASTERY_STREAK
+        and (kp is None or kp.produces_flowers)
+    ):
+        flower_gained = rewards.award_flower(db, user.id, question, source="practice")
+
     touch_streak(db, user.id, had_correct_today, correct)
 
+    db.flush()
     db.refresh(record)
     db.commit()
 
@@ -156,6 +246,10 @@ def submit_practice(
         consecutive_correct=record.consecutive_correct,
         mastered=record.consecutive_correct >= MASTERY_STREAK,
         duplicated=False,
+        mastered_needed=MASTERY_STREAK,
+        counted=counted,
+        cooldown_remaining=cooldown_remaining,
+        flower_gained=flower_gained,
     )
 
 

@@ -3,7 +3,7 @@
 import uuid
 
 import httpx
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.database import SessionLocal
 from app.models import KnowledgePoint, Progress, Question, User
@@ -67,12 +67,54 @@ def main():
     }).json()
     check("练习答错不计掌握", r1["is_correct"] is False and r1["mastered"] is False)
 
-    # 连对两次 -> 掌握
-    for _ in range(2):
-        r2 = c.post("/api/practice/result", json={
-            "question_id": pj["id"], "answer": answer_of(pj["id"]), "idempotency_key": uuid.uuid4().hex
-        }).json()
-    check("连对 2 次判定掌握", r2["mastered"] is True, f"consecutive={r2['consecutive_correct']}")
+    # 防抢记：10 分钟内连续答对只算 1 次
+    ra = c.post("/api/practice/result", json={
+        "question_id": pj["id"], "answer": answer_of(pj["id"]), "idempotency_key": uuid.uuid4().hex
+    }).json()
+    check("答对 1 次记 1 次连对", ra["consecutive_correct"] == 1, f"consecutive={ra['consecutive_correct']}")
+    rb = c.post("/api/practice/result", json={
+        "question_id": pj["id"], "answer": answer_of(pj["id"]), "idempotency_key": uuid.uuid4().hex
+    }).json()
+    check("防抢记：10 分钟内再答对不累计", rb["consecutive_correct"] == 1, f"consecutive={rb['consecutive_correct']}")
+
+    # 模拟"间隔 20 分钟 + 已连对 2 次"，再答对一次应达掌握并补花
+    from datetime import datetime, timedelta, timezone
+
+    from app.models import Attempt as AttemptM, QuestionFlower, WrongQuestion
+
+    with SessionLocal() as db:
+        w = db.execute(
+            select(WrongQuestion).where(
+                WrongQuestion.user_id == uuid.UUID(user_id),
+                WrongQuestion.question_id == uuid.UUID(pj["id"]),
+            )
+        ).scalar_one()
+        w.consecutive_correct = 2
+        past = datetime.now(timezone.utc) - timedelta(minutes=20)
+        for a in db.execute(
+            select(AttemptM).where(
+                AttemptM.user_id == uuid.UUID(user_id),
+                AttemptM.question_id == uuid.UUID(pj["id"]),
+                AttemptM.question_type == "practice",
+                AttemptM.is_correct.is_(True),
+            )
+        ).scalars():
+            a.created_at = past
+        db.commit()
+
+    rc = c.post("/api/practice/result", json={
+        "question_id": pj["id"], "answer": answer_of(pj["id"]), "idempotency_key": uuid.uuid4().hex
+    }).json()
+    check("连对 3 次判定掌握", rc["mastered"] is True, f"consecutive={rc['consecutive_correct']}")
+
+    with SessionLocal() as db:
+        flowers = db.execute(
+            select(func.count()).select_from(QuestionFlower).where(
+                QuestionFlower.user_id == uuid.UUID(user_id),
+                QuestionFlower.question_id == uuid.UUID(pj["id"]),
+            )
+        ).scalar_one()
+    check("补花：该题补到 1 朵花", flowers == 1, f"flowers={flowers}")
 
     # 掌握后移出默认列表
     default_book = c.get("/api/wrong-questions", params={"scope": "all"}).json()["items"]

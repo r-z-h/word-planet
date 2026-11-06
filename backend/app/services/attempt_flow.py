@@ -69,8 +69,10 @@ def apply_attempt(
 
     update_wrong_book(db, user.id, question.id, is_correct)
 
-    # 三层奖励：答对一题记一朵花（错题本补花走 practice）。幂等，重复作答不重复记。
-    if is_correct:
+    kp = db.get(KnowledgePoint, question.knowledge_point_id)
+
+    # 三层奖励：答对一题记一朵花（错题本补花走 practice）。纯练星球（如字母表）不产花。
+    if is_correct and (kp is None or kp.produces_flowers):
         rewards.award_flower(
             db,
             user.id,
@@ -81,7 +83,6 @@ def apply_attempt(
     day = local_today(db)
     task = get_or_create_daily_task(db, user.id, day)
 
-    kp = db.get(KnowledgePoint, question.knowledge_point_id)
     progress_row = get_progress(db, user.id)
     set_completed = False
     if kp is not None and is_set_complete(db, user.id, kp.id, question.set_no):

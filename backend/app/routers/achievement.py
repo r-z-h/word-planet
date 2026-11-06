@@ -44,6 +44,7 @@ def list_achievements(user: User = Depends(require_tested), db: Session = Depend
                 level=kp.level,
                 medals=pm.medals,
                 max_medals=len(kp_set_numbers(db, kp.id)),
+                medal_icon=kp.medal_icon,
             )
             for pm, kp in medals
         ],

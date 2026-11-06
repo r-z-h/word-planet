@@ -109,7 +109,7 @@
               <div class="t2">
                 <template v-if="cur">
                   还剩 {{ Math.max(cur.total_sets - cur.completed_sets, 0) }} 套 · 本套 🌸 {{ progress.setFlowers }} · ⭐ {{ progress.setStars }} ·
-                  {{ cur.pure ? '纯练' : medalEmoji(cur) + ' ' + progress.setMedals }}
+                  {{ cur.pure ? '纯练' : '徽记 ' + progress.setMedals }}
                 </template>
                 <template v-else>去地图上选一颗星球吧</template>
               </div>
@@ -159,7 +159,8 @@
               <span class="ar">→</span>
               <span class="layer">⭐ {{ progress.setStars }}<em>颗</em></span>
               <span class="ar">→</span>
-              <span class="layer hot">{{ cur ? medalEmoji(cur) : '🏅' }} {{ progress.setMedals }}<em>个</em></span>
+              <span v-if="cur && cur.gate_mode === 'completion'" class="layer hot">{{ cur.completed ? '✓ 已完成' : '未完成' }}</span>
+              <span v-else class="layer hot"><MedalIcon :icon="cur ? medalEmoji(cur) : '🏅'" /> {{ progress.setMedals }}<em>个</em></span>
             </div>
 
             <div class="btnrow">
@@ -170,27 +171,25 @@
                 ⭐5 → 徽记
               </button>
             </div>
+
+            <!-- 进入兑换（该星球全部套，有花没花都能进） -->
+            <button class="ebtn wide" style="margin-top: 9px" @click="openExchange">🧾 进入兑换</button>
           </div>
 
           <div class="card">
             <h3>解锁路线</h3>
             <div class="steps">
-              <div class="step">
-                <span class="lv">L1</span>
-                <span class="need">字母表完成 + 3 个 🥚</span>
-                <span :class="steps.l1ok ? 'ok' : 'no'">{{ steps.l1Text }}</span>
-              </div>
-              <div class="down">↓ 能力测试 10 题 · 对 8 过</div>
-              <div class="step">
-                <span class="lv">L2</span>
-                <span class="need">🐻3 + ✍️2 + 🐦2</span>
-                <span :class="steps.l2ok ? 'ok' : 'no'">{{ steps.l2Text }}</span>
-              </div>
-              <div class="down">↓ 能力测试 10 题 · 对 8 过</div>
-              <div class="step">
-                <span class="lv">L3</span>
-                <span class="need">{{ steps.l3Need }}</span>
-                <span :class="steps.l3ok ? 'ok' : 'no'">{{ steps.l3Text }}</span>
+              <div v-for="r in route" :key="r.label" class="step">
+                <span class="lv">{{ r.label }}</span>
+                <span class="need">
+                  <template v-if="r.end">{{ r.ok ? '已解锁' : '未解锁' }}</template>
+                  <template v-else>
+                    <span v-for="(it, i) in r.items" :key="it.name">
+                      <b :class="it.ok ? 'ok' : 'no'">{{ it.ok ? '✓' : '·' }}</b> {{ it.name }} {{ it.text }}<span v-if="i < r.items.length - 1">；</span>
+                    </span>
+                  </template>
+                </span>
+                <span v-if="!r.end" :class="r.ok ? 'ok' : 'no'">{{ r.ok ? '✓' : '未达成' }}</span>
               </div>
             </div>
           </div>
@@ -221,7 +220,7 @@
           <div class="card">
             <h3>下一个目标</h3>
             <div class="goal">
-              <span class="goal-icon">{{ goal.icon }}</span>
+              <span class="goal-icon"><MedalIcon :icon="goal.icon" /></span>
               <span class="goal-text" v-html="goal.text" />
             </div>
             <button class="ebtn wide" @click="goalGo">{{ goal.btn }}</button>
@@ -242,6 +241,7 @@ import { useProgressStore } from '../stores/progress'
 import { useLessonStore } from '../stores/lesson'
 import StarField from '../components/StarField.vue'
 import PlanetMap from '../components/game/PlanetMap.vue'
+import MedalIcon from '../components/MedalIcon.vue'
 import { isSoundOn, setSoundOn } from '../utils/sfx'
 import { getVolume, setVolume, isMotionReduced, setMotionReduced, clearLocalCache } from '../utils/prefs'
 
@@ -267,6 +267,8 @@ const pwdOpen = ref(false)
 const pwdOld = ref('')
 const pwdNew = ref('')
 const wrongItems = ref([])
+const planetSets = ref([])
+const busySet = ref(null)
 const map = ref({
   planets: [],
   today_flowers: 0,
@@ -306,58 +308,67 @@ function barH(n) {
   return Math.round(4 + (n / max) * 22) + 'px'
 }
 function medalEmoji(p) {
-  return MEDAL[p?.name] || '🏅'
+  return p?.medal_icon || '🏅'
 }
 function typeName(p) {
   return TYPE[p?.question_type] || ''
 }
 
-const steps = computed(() => {
-  const by = (n) => map.value.planets.find((p) => p.name === n)
-  const letter = by('字母表')
-  const greet = by('基础问候词')
-  const bear = by('常用单词')
-  const spell = by('简单拼写')
-  const pron = by('单词跟读')
-
-  const l1done = (letter?.is_complete ? 1 : 0) + Math.min(greet?.medals || 0, 3)
-  const l1ok = !!letter?.is_complete && (greet?.medals || 0) >= 3
-  const l2have = Math.min(bear?.medals || 0, 3) + Math.min(spell?.medals || 0, 2) + Math.min(pron?.medals || 0, 2)
-  const l2ok = (bear?.medals || 0) >= 3 && (spell?.medals || 0) >= 2 && (pron?.medals || 0) >= 2
-  const l3ok = (map.value.max_level || 'L1') >= 'L3'
-  return {
-    l1ok,
-    l1Text: `${Math.min(l1done, 4)}/4 ${l1ok ? '✓' : ''}`.trim(),
-    l2ok,
-    l2Text: `${l2have} / 7`,
-    l3ok,
-    l3Need: l3ok ? '已解锁' : '🔒 需先通过 L2 能力测试',
-    l3Text: l3ok ? '✓' : '未解锁'
+// 门槛星球（计入本级门槛的）
+function gatePlanets(level) {
+  return map.value.planets.filter((p) => p.level === level && p.counts_for_gate)
+}
+function gateItemText(p) {
+  if (p.gate_mode === 'completion') return p.completed ? '已完成 ✓' : '未完成'
+  return `${Math.min(p.medals || 0, p.gate_required || 0)}/${p.gate_required || 0}`
+}
+function gateItemOk(p) {
+  return p.gate_mode === 'completion' ? !!p.completed : (p.medals || 0) >= (p.gate_required || 0)
+}
+const route = computed(() => {
+  const row = (from, to) => {
+    const ps = gatePlanets(from)
+    return {
+      label: `${from}→${to}`,
+      items: ps.map((p) => ({ name: p.name, icon: p.medal_icon || '', text: gateItemText(p), ok: gateItemOk(p) })),
+      ok: ps.length > 0 && ps.every((p) => gateItemOk(p))
+    }
   }
+  return [
+    row('L1', 'L2'),
+    row('L2', 'L3'),
+    { label: 'L3', items: [], ok: (map.value.max_level || 'L1') >= 'L3', end: true }
+  ]
 })
 
 const goal = computed(() => {
-  const by = (n) => map.value.planets.find((p) => p.name === n)
-  if ((map.value.max_level || 'L1') === 'L3') {
-    return { icon: '🏆', text: '已经是最高等级，继续收集徽记吧', btn: '去常用单词', name: '常用单词' }
+  const level = map.value.level || 'L1'
+  const gp = gatePlanets(level)
+  const lack = gp.find((p) => !gateItemOk(p))
+  if (!lack) return { icon: '🎯', text: '本级已达标，去挑战能力测试吧', btn: '去能力测试', gate: true }
+  if (lack.gate_mode === 'completion') {
+    return { icon: '✅', text: `完成「${lack.name}」`, btn: '去' + lack.name, name: lack.name }
   }
-  if ((map.value.max_level || 'L1') === 'L1') {
-    const need = Math.max(0, 3 - (by('基础问候词')?.medals || 0))
-    return {
-      icon: '🥚',
-      text: `再拿 <b>${need} 个</b> 🥚 就能挑战 L2`,
-      btn: '去基础问候词',
-      name: '基础问候词'
-    }
-  }
-  const need = Math.max(0, 3 - (by('常用单词')?.medals || 0))
+  const need = (lack.gate_required || 0) - (lack.medals || 0)
+  const emoji = lack.medal_icon || '🏅'
   return {
-    icon: '🐻',
-    text: `再拿 <b>${need} 个</b> 🐻 就能挑战 L3`,
-    btn: '去常用单词',
-    name: '常用单词'
+    icon: emoji,
+    text: `再拿 <b>${need} 枚</b>「${lack.medal_name || lack.name}」`,
+    btn: '去' + lack.name,
+    name: lack.name
   }
 })
+
+// 兑换抽屉
+const exchangeOpen = ref(false)
+const showTodo = ref(false)
+const setsDone = computed(() => planetSets.value.filter((s) => s.status === 'completed'))
+const setsDoing = computed(() => planetSets.value.filter((s) => s.status === 'in_progress'))
+const setsTodo = computed(() => planetSets.value.filter((s) => s.status === 'not_started'))
+
+function openExchange() {
+  router.push('/exchange')
+}
 
 onMounted(load)
 
@@ -373,10 +384,54 @@ async function load() {
     streak.value = s.current_streak
     wrongItems.value = (wrongResp.data.items || []).filter((x) => !x.is_mastered)
     await Promise.all([progress.fetchProgress(), lesson.fetchOverview()])
+    await loadPlanetSets()
   } catch (e) {
     ElMessage.error(apiError(e))
   } finally {
     loading.value = false
+  }
+}
+
+function newKey() {
+  return window.crypto?.randomUUID
+    ? window.crypto.randomUUID().replace(/-/g, '')
+    : `${Date.now()}${Math.random().toString(16).slice(2)}`
+}
+
+async function loadPlanetSets() {
+  const p = cur.value
+  if (!p) {
+    planetSets.value = []
+    return
+  }
+  try {
+    const { data } = await http.get('/lesson/planet-sets', {
+      params: { knowledge_point_id: p.id }
+    })
+    planetSets.value = data.sets || []
+  } catch {
+    planetSets.value = []
+  }
+}
+
+async function exchangeSet(setNo, fromKind) {
+  if (!cur.value || busySet.value) return
+  busySet.value = setNo
+  try {
+    await http.post('/reward/exchange', {
+      knowledge_point_id: cur.value.id,
+      set_no: setNo,
+      from_kind: fromKind,
+      amount: 1,
+      idempotency_key: newKey()
+    })
+    await loadPlanetSets()
+    await progress.fetchProgress()
+    ElMessage.success(fromKind === 'flower' ? '兑换成功：🌸3 → ⭐1' : '兑换成功：⭐5 → 徽记')
+  } catch (e) {
+    ElMessage.error(apiError(e))
+  } finally {
+    busySet.value = null
   }
 }
 
@@ -424,6 +479,10 @@ async function exchange(fromKind) {
 }
 
 function goalGo() {
+  if (goal.value.gate) {
+    goGate()
+    return
+  }
   const p = map.value.planets.find((x) => x.name === goal.value.name)
   if (p) enterPlanet(p)
 }
@@ -712,6 +771,39 @@ function logout() {
 }
 .ebtn[disabled] { filter: grayscale(1) brightness(0.72); cursor: default; box-shadow: none; }
 .ebtn.wide { width: 100%; margin-top: 8px; }
+
+/* 可补兑换的已完成套 */
+.sup { margin-top: 12px; border-top: 1px dashed rgba(255, 232, 180, 0.22); padding-top: 11px; }
+.sup-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.sup-head .t { font-size: 10.5px; font-weight: 900; color: var(--wp2-gold); }
+.sup-head .cnt { font-size: 9.5px; color: var(--wp2-muted); font-weight: 800; }
+.sup-row {
+  display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; margin-bottom: 5px;
+  background: rgba(255, 246, 225, 0.06); border: 1.5px solid rgba(255, 232, 180, 0.16);
+}
+.sup-row .sn { font-size: 10.5px; font-weight: 900; color: var(--wp2-ink); width: 48px; flex: none; }
+.sup-row .fl { flex: 1; font-size: 9.5px; color: #ff9db4; font-weight: 800; }
+.sup-row .fl b { color: var(--wp2-ink); font-size: 10.5px; }
+.mini {
+  padding: 5px 9px; border-radius: 8px; font-size: 9.5px; font-weight: 900; color: #3a2109; cursor: pointer;
+  background: linear-gradient(180deg, #ffd166, #f4a340); border: 2px solid var(--wp2-inkline);
+  box-shadow: 0 2px 0 var(--wp2-inkline); white-space: nowrap;
+}
+.mini[disabled] { filter: grayscale(1) brightness(0.75); cursor: default; }
+.sup .note { font-size: 9px; color: var(--wp2-dim); line-height: 1.5; margin-top: 4px; }
+
+/* 兑换抽屉 */
+.ex-head { font-size: 12.5px; font-weight: 900; color: var(--wp2-ink); margin-bottom: 10px; }
+.ex-sec { font-size: 11px; font-weight: 900; color: var(--wp2-gold); margin: 12px 0 6px; }
+.ex-row {
+  display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 9px; margin-bottom: 5px;
+  background: rgba(255, 246, 225, 0.06); border: 1.5px solid rgba(255, 232, 180, 0.16); flex-wrap: wrap;
+}
+.ex-row.muted { opacity: 0.6; }
+.ex-sn { font-size: 10.5px; font-weight: 900; color: var(--wp2-ink); width: 46px; flex: none; }
+.ex-meta { flex: 1; font-size: 9.5px; color: var(--wp2-muted); font-weight: 700; }
+.ex-row .mini { padding: 4px 7px; font-size: 9px; }
+.ex-tip { font-size: 10px; color: var(--wp2-dim); line-height: 1.6; margin-top: 14px; }
 
 .steps { display: flex; flex-direction: column; gap: 7px; }
 .step { display: flex; align-items: center; gap: 7px; font-size: 10.5px; color: var(--wp2-muted); font-weight: 700; }

@@ -18,7 +18,7 @@ from ..models import (
     WrongQuestion,
 )
 
-MASTERY_STREAK = 2
+MASTERY_STREAK = 3  # 错题本连续答对 3 次视为掌握，并补发该题 1 朵花
 
 
 def local_today(db: Session) -> date:
@@ -156,10 +156,14 @@ def award_badges(db: Session, user: User) -> list[str]:
 
     progress = db.get(Progress, user.id)
     completed = set(progress.completed_knowledge_points or []) if progress else set()
-    # 「初学有成」= 完成 L1 第一个**计入门槛**的知识点（字母表不计门槛）
+    # 「初学有成」= 完成 L1 第一个"攒徽记"的知识点（字母表只判完成、不算这个徽章的达成）
     l1_first = db.execute(
         select(KnowledgePoint)
-        .where(KnowledgePoint.level == "L1", KnowledgePoint.counts_for_gate.is_(True))
+        .where(
+            KnowledgePoint.level == "L1",
+            KnowledgePoint.counts_for_gate.is_(True),
+            KnowledgePoint.gate_mode == "medals",
+        )
         .order_by(KnowledgePoint.sort_order)
         .limit(1)
     ).scalar_one_or_none()

@@ -119,6 +119,9 @@ def recompute_set_progress(
         ).scalar_one()
     sp.flowers_earned = max(sp.flowers_earned or 0, int(flowers))
 
+    # 「满套」两种算达成：①该套每道题都拿到过花（含错题本补花）；
+    # ②主流程首答全对（兼容纯练星球：全对但根本不产生花的场景）
+    correct = 0
     if qids:
         correct = db.execute(
             select(func.count(func.distinct(Attempt.question_id))).where(
@@ -128,8 +131,8 @@ def recompute_set_progress(
                 Attempt.question_id.in_(qids),
             )
         ).scalar_one()
-        if correct >= total:
-            sp.is_complete = True
+    if qids and (int(flowers) >= total or int(correct) >= total):
+        sp.is_complete = True
 
     db.flush()
     return sp

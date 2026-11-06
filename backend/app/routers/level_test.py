@@ -55,6 +55,7 @@ def status(user: User = Depends(require_tested), db: Session = Depends(get_db)):
         "next_level": nxt,
         "required_sets": SETS_REQUIRED,
         "gate_ready": gate["ready"],
+        "knowledge_points": gate["knowledge_points"],
         "can_test": gate["ready"] and nxt is not None,
         "attempt_count": count,
         "last_result": (
@@ -77,7 +78,7 @@ def start(user: User = Depends(require_tested), db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=409,
             detail={
-                "detail": f"本级每个知识点至少完成 {SETS_REQUIRED} 套后才能测试",
+                "detail": "本级每个计入门槛的星球都达标后才能测试（集齐各自数量的星球徽记，或完成指定星球）",
                 "code": "GATE_NOT_READY",
             },
         )

@@ -16,7 +16,7 @@
         :title="status.next_level ? '还没达标' : '已经是最高等级'"
         :description="
           status.next_level
-            ? `本级每个计入门槛的知识点都要完成 ${status.required_sets} 套，才能开始测试。`
+            ? '本级每个计入门槛的星球都要达标（集齐各自数量的星球徽记，或完成指定星球），才能开始测试。'
             : '当前是 L3，没有更高等级了。'
         "
         type="warning"

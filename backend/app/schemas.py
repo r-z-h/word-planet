@@ -210,8 +210,15 @@ class MapPlanetOut(BaseModel):
     medals: int = 0          # 该星球已获得徽记
     max_medals: int = 0      # 该星球徽记上限（= 套数）
     mastered_sets: int = 0   # 该星球「完全掌握（全对）」的套数，用于提醒去兑换徽章
-    pure: bool = False       # 纯练星球（不产奖励）
+    pure: bool = False       # 纯练星球（不产花）
+    counts_for_gate: bool = False  # 是否计入本级门槛
     is_complete: bool = False  # 纯练星球「已完成」
+    gate_mode: str = "medals"
+    gate_required: int = 0
+    medal_name: str = ""
+    medal_icon: str = ""
+    produces_flowers: bool = True
+    completed: bool = False
     locked: bool = False
     is_current: bool = False
 
@@ -237,8 +244,12 @@ class PlanetSetOut(BaseModel):
     set_no: int
     total_count: int = 0
     flowers: int = 0            # 该套已拿到花的题数（含错题本补花）
-    is_complete: bool = False   # 该套是否已拿满 15 朵花（= 满套）
-    medals_granted: int = 0     # 该套是否已兑换徽章（0/1）
+    stars: int = 0              # 该套已兑出的星数
+    medals_granted: int = 0     # 该套是否已兑换徽记（0/1）
+    exchangeable_stars: int = 0 # 当前可兑星数
+    can_exchange_medal: bool = False
+    is_complete: bool = False   # 该套满花（可兑徽记）
+    status: str = "not_started" # not_started | in_progress | completed
     is_current: bool = False
 
 
@@ -310,6 +321,7 @@ class MedalItem(BaseModel):
     level: str
     medals: int
     max_medals: int
+    medal_icon: str = ""
 
 
 AchievementResponse.model_rebuild()
@@ -429,6 +441,12 @@ class KpProgressOut(BaseModel):
     current_set: int | None = None
     medals: int = 0
     mastered_sets: int = 0
+    gate_mode: str = "medals"      # medals | completion
+    gate_required: int = 0         # medals 模式需要几枚
+    medal_name: str = ""
+    medal_icon: str = ""
+    produces_flowers: bool = True
+    completed: bool = False        # completion 模式：是否已完成（全对）
     meets_gate: bool = False
 
 

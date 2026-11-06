@@ -16,9 +16,9 @@ def test_map_returns_seven_planets(l1_client):
     assert by_name["常用单词"]["locked"] is True
     assert by_name["拼写进阶"]["locked"] is True
 
-    # 纯练标记
+    # 纯练标记：字母表纯练；听力已改为正常星球
     assert by_name["字母表"]["pure"] is True
-    assert by_name["听力理解"]["pure"] is True
+    assert by_name["听力理解"]["pure"] is False
     assert by_name["基础问候词"]["pure"] is False
 
     # 当前星球

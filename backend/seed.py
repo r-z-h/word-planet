@@ -1,4 +1,4 @@
-﻿"""初始化种子数据：7 个知识点 × 15 题 + 4 个徽章 + 每题解析。
+"""初始化种子数据：7 个知识点 × 15 题 + 4 个徽章 + 每题解析。
 
 幂等：按 (level, sort_order) 判知识点，按 (knowledge_point_id, stem) 判题目；
 已存在的题会补写缺失的 explanation。
@@ -13,15 +13,14 @@ from app.models import Attempt, Badge, KnowledgePoint, Question, WrongQuestion
 # ---------------------------------------------------------------- 知识点定义
 
 KP_DEFS = [
-    # (等级, 名称, 题型, 顺序, 是否计入升级门槛)
-    # 字母表只有 26 个字母、听力只有手写 15 句，凑不满 3 套，不计入门槛
-    ("L1", "字母表", "letter", 1, False),
-    ("L1", "基础问候词", "word", 2, True),
-    ("L2", "常用单词", "word", 1, True),
-    ("L2", "简单拼写", "spelling", 2, True),
-    ("L2", "单词跟读", "pronunciation", 3, True),
-    ("L3", "听力理解", "listening", 1, False),
-    ("L3", "拼写进阶", "spelling", 2, True),
+    # (等级, 名称, 题型, 顺序, 是否计入门槛, 门槛类型, 门槛数量, 徽记名, 徽记图标, 是否产花)
+    ("L1", "字母表", "letter", 1, True, "completion", 0, "", "", False),
+    ("L1", "基础问候词", "word", 2, True, "medals", 5, "破壳蛋", "🥚", True),
+    ("L2", "常用单词", "word", 1, True, "medals", 3, "小熊", "🐻", True),
+    ("L2", "简单拼写", "spelling", 2, True, "medals", 5, "铅笔", "✍️", True),
+    ("L2", "单词跟读", "pronunciation", 3, True, "medals", 7, "小鸟", "🐦", True),
+    ("L3", "听力理解", "listening", 1, False, "medals", 0, "耳机", "/medals/listening.svg", True),
+    ("L3", "拼写进阶", "spelling", 2, True, "medals", 0, "水晶球", "🔮", True),
 ]
 
 DIFFICULTY = {"L1": 1, "L2": 2, "L3": 3}
@@ -242,7 +241,19 @@ def seed_badges(db) -> None:
     db.flush()
 
 
-def ensure_kp(db, level, name, qtype, order, counts_for_gate=True) -> KnowledgePoint:
+def ensure_kp(
+    db,
+    level,
+    name,
+    qtype,
+    order,
+    counts_for_gate=True,
+    gate_mode="medals",
+    gate_required=0,
+    medal_name="",
+    medal_icon="",
+    produces_flowers=True,
+) -> KnowledgePoint:
     kp = db.execute(
         select(KnowledgePoint).where(
             KnowledgePoint.level == level, KnowledgePoint.sort_order == order
@@ -255,11 +266,24 @@ def ensure_kp(db, level, name, qtype, order, counts_for_gate=True) -> KnowledgeP
             sort_order=order,
             question_type=qtype,
             counts_for_gate=counts_for_gate,
+            gate_mode=gate_mode,
+            gate_required=gate_required,
+            medal_name=medal_name,
+            medal_icon=medal_icon,
+            produces_flowers=produces_flowers,
         )
         db.add(kp)
         db.flush()
-    elif kp.counts_for_gate != counts_for_gate:
+    else:
+        # 同步最新口径（幂等，可重复跑）
+        kp.name = name
+        kp.question_type = qtype
         kp.counts_for_gate = counts_for_gate
+        kp.gate_mode = gate_mode
+        kp.gate_required = gate_required
+        kp.medal_name = medal_name
+        kp.medal_icon = medal_icon
+        kp.produces_flowers = produces_flowers
     return kp
 
 
@@ -320,8 +344,11 @@ def seed() -> None:
         seed_badges(db)
 
         kps = {}
-        for level, name, qtype, order, gate in KP_DEFS:
-            kps[(level, order)] = ensure_kp(db, level, name, qtype, order, gate)
+        for level, name, qtype, order, gate, gate_mode, gate_required, medal_name, medal_icon, produces_flowers in KP_DEFS:
+            kps[(level, order)] = ensure_kp(
+                db, level, name, qtype, order, gate,
+                gate_mode, gate_required, medal_name, medal_icon, produces_flowers,
+            )
 
         def add_all(kp, qtype, items, explanation_index=3):
             for item in items:

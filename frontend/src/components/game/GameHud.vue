@@ -20,7 +20,13 @@
     </span>
 
     <span class="gh-segs">
-      <i v-for="(s, i) in normalizedSegs" :key="i" :class="s" />
+      <i
+        v-for="(s, i) in normalizedSegs"
+        :key="i"
+        :class="[segClass(s), { clickable: segClickable(s) }]"
+        :title="segClickable(s) ? '点这里回到这道未做的题' : ''"
+        @click="onSegClick(s)"
+      />
     </span>
 
     <span v-if="flowers !== null" class="gh-flower">🌸 {{ flowers }}</span>
@@ -40,23 +46,32 @@ const props = defineProps({
   done: { type: Number, default: 0 },
   kpTotalSets: { type: Number, default: 0 },
   kpDoneSets: { type: Number, default: 0 },
-  // 15 段：'ok' | 'no' | 'cur' | ''
+  // 15 段：元素可为 'ok'|'no'|'cur'|''（旧）或 {id,state}（新，可点击）
   segs: { type: Array, default: () => [] },
   // null = 纯练星球，不显示花
   flowers: { type: Number, default: null },
   showExit: { type: Boolean, default: true }
 })
-defineEmits(['exit'])
+const emit = defineEmits(['exit', 'seek'])
 
 const normalizedSegs = computed(() => {
   const arr = []
   for (let i = 0; i < 15; i += 1) {
-    if (i < props.segs.length) arr.push(props.segs[i] || '')
+    if (i < props.segs.length) arr.push(props.segs[i])
     else if (i === props.done) arr.push('cur')
     else arr.push('')
   }
   return arr
 })
+function segClass(s) {
+  return typeof s === 'string' ? s : (s && s.state) || ''
+}
+function segClickable(s) {
+  return !!s && typeof s === 'object' && !!s.id && s.state === 'todo'
+}
+function onSegClick(s) {
+  if (segClickable(s)) emit('seek', s)
+}
 </script>
 
 <style scoped>
@@ -86,14 +101,18 @@ const normalizedSegs = computed(() => {
 .gh-prog { color: var(--wp2-dim); font-weight: 800; display: flex; flex-direction: column; line-height: 1.3; text-align: right; }
 .gh-prog-line { white-space: nowrap; }
 .gh-prog-line.dim { opacity: 0.72; font-size: 11px; }
-.gh-segs { display: flex; gap: 3px; }
+.gh-segs { display: flex; gap: 4px; }
 .gh-segs i {
-  width: 8px; height: 14px; border-radius: 3px;
-  background: rgba(255, 246, 225, 0.16); border: 1.5px solid rgba(255, 246, 225, 0.2);
+  width: 14px; height: 22px; border-radius: 5px; box-sizing: border-box;
+  background: rgba(255, 246, 225, 0.16); border: 2px solid rgba(255, 246, 225, 0.22);
+  transition: transform 0.1s;
 }
 .gh-segs i.ok { background: var(--wp2-l2); border-color: var(--wp2-l2); }
 .gh-segs i.no { background: var(--wp2-red); border-color: var(--wp2-red); }
-.gh-segs i.cur { border-color: var(--wp2-gold); }
+.gh-segs i.cur { background: #4c6ef5; border-color: #4c6ef5; box-shadow: 0 0 8px rgba(76, 110, 245, 0.8); }
+.gh-segs i.todo { background: #ffffff; border-color: #ffffff; }
+.gh-segs i.clickable { cursor: pointer; }
+.gh-segs i.clickable:hover { transform: scale(1.15); }
 .gh-flower { color: var(--wp2-gold); font-weight: 900; white-space: nowrap; }
 .gh-exit {
   flex: none; width: 30px; height: 30px; border-radius: 9px; cursor: pointer;
@@ -105,6 +124,7 @@ const normalizedSegs = computed(() => {
 @media (max-width: 767px) {
   .gh { gap: 8px; padding: 8px 12px; flex-wrap: wrap; }
   .gh-name { font-size: 11.5px; }
-  .gh-segs i { width: 6px; height: 12px; }
+  .gh-segs { gap: 3px; }
+  .gh-segs i { width: 10px; height: 16px; border-radius: 4px; }
 }
 </style>

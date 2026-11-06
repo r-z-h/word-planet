@@ -73,6 +73,9 @@
             <el-tag size="small" type="info">{{ item.knowledge_point_name }}</el-tag>
             <span class="muted">错 {{ item.error_count }} 次</span>
             <el-tag v-if="item.is_mastered" size="small" type="success">已掌握</el-tag>
+            <el-button size="small" type="primary" plain @click="practiceOne(item.question_id)">
+              练这一题
+            </el-button>
           </div>
           <div v-if="item.explanation" class="explain">{{ item.explanation }}</div>
         </div>
@@ -132,6 +135,10 @@ function startModulePractice() {
 
 function startRecheck() {
   router.push({ path: '/practice', query: { scope: 'mastered', limit: recheckLimit.value } })
+}
+
+function practiceOne(questionId) {
+  router.push({ path: '/practice', query: { qid: questionId } })
 }
 </script>
 

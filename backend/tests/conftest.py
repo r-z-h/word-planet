@@ -87,6 +87,7 @@ def force_level(user_id: str, level: str) -> str:
                 .where(
                     KnowledgePoint.level == level,
                     KnowledgePoint.counts_for_gate.is_(True),
+                    KnowledgePoint.gate_mode == "medals",
                 )
                 .order_by(KnowledgePoint.sort_order)
             )

@@ -139,6 +139,77 @@ def next_pronunciation(
         knowledge_point_name=kp.name,
     )
 
+@router.get("/one", response_model=PronunciationNextResponse)
+def one_pronunciation(
+    word_id: str,
+    user: User = Depends(require_tested),
+    db: Session = Depends(get_db),
+):
+    """按题号取当前套里一道未作答的跟读题（供路段条点击跳转）。"""
+    kp = _require_pronunciation_kp(db, user)
+    set_no = current_set_no(db, user.id, kp.id)
+    if set_no is None:
+        raise HTTPException(
+            status_code=409,
+            detail={"detail": "这个知识点的跟读题都练完了", "code": "KNOWLEDGE_POINT_FINISHED"},
+        )
+    try:
+        qid = uuid.UUID(word_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="word_id 非法")
+    question = db.get(Question, qid)
+    if question is None:
+        raise HTTPException(status_code=404, detail="题目不存在")
+    if (
+        question.question_type != "pronunciation"
+        or question.knowledge_point_id != kp.id
+        or question.set_no != set_no
+    ):
+        raise HTTPException(status_code=409, detail={"detail": "不是当前套的题", "code": "WRONG_SET"})
+    answered = db.execute(
+        select(Attempt.id).where(Attempt.user_id == user.id, Attempt.question_id == question.id).limit(1)
+    ).first()
+    if answered:
+        raise HTTPException(status_code=409, detail={"detail": "这道题已作答", "code": "ALREADY_ANSWERED"})
+
+    progress = db.get(Progress, user.id)
+    if progress is not None and progress.last_question_id != question.id:
+        progress.last_question_id = question.id
+        db.commit()
+
+    total = db.execute(
+        select(func.count()).select_from(Question).where(
+            Question.knowledge_point_id == kp.id, Question.set_no == set_no
+        )
+    ).scalar_one()
+    done = db.execute(
+        select(func.count(func.distinct(Attempt.question_id)))
+        .select_from(Attempt)
+        .join(Question, Question.id == Attempt.question_id)
+        .where(
+            Attempt.user_id == user.id,
+            Question.knowledge_point_id == kp.id,
+            Question.set_no == set_no,
+            Attempt.question_type != "practice",
+        )
+    ).scalar_one()
+    word = db.execute(
+        select(Word).where(Word.word == str(question.answer).strip().lower())
+    ).scalar_one_or_none()
+    return PronunciationNextResponse(
+        question=PronunciationQuestionOut(
+            id=str(question.id),
+            stem=question.stem,
+            answer=str(question.answer),
+            phonetic=word.phonetic if word else None,
+        ),
+        set_no=set_no,
+        set_total=total,
+        set_done=done,
+        knowledge_point_name=kp.name,
+    )
+
+
 @router.post("/result", response_model=PronunciationResultResponse)
 def submit_pronunciation(
     payload: PronunciationResultRequest,

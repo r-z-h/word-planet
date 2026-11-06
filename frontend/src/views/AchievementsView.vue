@@ -15,7 +15,7 @@
       </div>
       <div v-else class="medal-grid">
         <div v-for="m in medals" :key="m.knowledge_point_id" class="medal">
-          <div class="em">{{ medalEmoji(m.name) }}</div>
+          <div class="em"><MedalIcon :icon="m.medal_icon || '🏅'" /></div>
           <div class="nm">{{ m.name }}</div>
           <div class="lv wp2-dim">{{ m.level }} · {{ m.medals }} / {{ m.max_medals }}</div>
           <div class="bar"><i :style="{ width: pct(m) + '%' }" /></div>
@@ -36,6 +36,7 @@ import { ElMessage } from 'element-plus'
 import http, { apiError } from '../api/http'
 import AchievementWall from '../components/AchievementWall.vue'
 import StarField from '../components/StarField.vue'
+import MedalIcon from '../components/MedalIcon.vue'
 
 const items = ref([])
 const medals = ref([])

@@ -184,8 +184,8 @@ def test_exchange_without_progress_raises(db):
 
 def test_pure_planet_complete_without_flowers(db):
     u = _user(db)
-    kp, qs = _kp_with_set(db, "L1", 1)  # 字母表 letter，纯练
-    assert kp.counts_for_gate is False
+    kp, qs = _kp_with_set(db, "L1", 1)  # 字母表 letter，纯练（不产花）
+    assert kp.produces_flowers is False
     for q in qs:
         _attempt(db, u.id, q, correct=True)
     sp = _finish_set(db, u, kp)

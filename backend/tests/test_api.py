@@ -166,7 +166,7 @@ def test_wrong_question_enters_book_and_mastery(l1_client):
     items = l1_client.get("/api/wrong-questions", params={"scope": "all"}).json()["items"]
     assert any(i["question_id"] == q["id"] for i in items)
 
-    for _ in range(2):
+    for _ in range(3):
         l1_client.post(
             "/api/answer/submit",
             json={

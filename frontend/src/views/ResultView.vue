@@ -33,7 +33,7 @@
             </div>
             <div class="rp-arrow">→</div>
             <div class="rp-col" :class="{ off: summary.medals === 0 }">
-              <div class="rp-lab">徽记</div>
+              <div class="rp-lab"><MedalIcon :icon="planet?.medal_icon || '🏅'" /> 徽记</div>
               <div class="rp-val">{{ summary.medals }}</div>
               <div class="rp-cap">{{ summary.medals > 0 ? '本套产出' : '还没拿到' }}</div>
             </div>
@@ -73,6 +73,7 @@ import { ElMessage } from 'element-plus'
 import http, { apiError } from '../api/http'
 import { useProgressStore } from '../stores/progress'
 import StarField from '../components/StarField.vue'
+import MedalIcon from '../components/MedalIcon.vue'
 
 const route = useRoute()
 const router = useRouter()

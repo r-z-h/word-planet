@@ -15,6 +15,7 @@ const routes = [
   { path: '/modules', redirect: '/home' },
   { path: '/level-test', component: () => import('../views/LevelTestView.vue') },
   { path: '/result', component: () => import('../views/ResultView.vue') },
+  { path: '/exchange', component: () => import('../views/ExchangeView.vue') },
   { path: '/practice', component: () => import('../views/PracticeView.vue') },
   { path: '/review', component: () => import('../views/ReviewView.vue') },
   { path: '/words', component: () => import('../views/WordsView.vue') },

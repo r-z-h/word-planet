@@ -7,12 +7,14 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import require_tested
-from ..models import Attempt, KnowledgePoint, Progress, QuestionFlower, SetProgress, User
+from ..models import Attempt, KnowledgePoint, Progress, Question, QuestionFlower, SetProgress, User
 from ..schemas import (
     KpProgressOut,
     LessonOverview,
     MapPlanetOut,
     MapResponse,
+    PlanetSetOut,
+    PlanetSetsResponse,
     SelectKpRequest,
     SwitchLevelRequest,
 )
@@ -21,6 +23,8 @@ from ..services.attempts import local_date_of, local_today
 from ..services.lesson import (
     LEVELS,
     SETS_REQUIRED,
+    current_set_no,
+    kp_set_numbers,
     level_gate,
     level_kps,
     next_level,
@@ -56,6 +60,7 @@ def overview(user: User = Depends(require_tested), db: Session = Depends(get_db)
         level=user.level,
         max_level=max_level,
         required_sets=SETS_REQUIRED,
+        required_medals=0,
         knowledge_points=[KpProgressOut(**item) for item in gate["knowledge_points"]],
         gate_ready=gate["ready"],
         can_test=gate["ready"] and next_level(user.level) is not None,
@@ -149,7 +154,7 @@ def map_overview(user: User = Depends(require_tested), db: Session = Depends(get
     for lv in LEVELS:
         for kp in level_kps(db, lv):
             s = set_summary(db, user.id, kp)
-            pure = not kp.counts_for_gate
+            pure = not kp.produces_flowers
             is_complete = False
             if pure:
                 hit = db.execute(
@@ -171,10 +176,18 @@ def map_overview(user: User = Depends(require_tested), db: Session = Depends(get
                     total_sets=s["total_sets"],
                     completed_sets=s["completed_sets"],
                     current_set=s["current_set"],
-                    medals=rewards.planet_medal_count(db, user.id, kp.id),
+                    medals=s["medals"],
                     max_medals=s["total_sets"],
+                    mastered_sets=s["mastered_sets"],
                     pure=pure,
+                    counts_for_gate=kp.counts_for_gate,
                     is_complete=is_complete,
+                    gate_mode=kp.gate_mode,
+                    gate_required=kp.gate_required,
+                    medal_name=kp.medal_name,
+                    medal_icon=kp.medal_icon,
+                    produces_flowers=kp.produces_flowers,
+                    completed=s["completed"],
                     locked=idx[kp.level] > idx[max_level],
                     is_current=(str(kp.id) == current_id),
                 )
@@ -260,4 +273,80 @@ def map_overview(user: User = Depends(require_tested), db: Session = Depends(get
         week_counts=week_counts,
         gate_ready=bool(gate["ready"]),
         next_level=next_level(user.level),
+    )
+
+
+@router.get("/planet-sets", response_model=PlanetSetsResponse)
+def planet_sets(
+    knowledge_point_id: str,
+    user: User = Depends(require_tested),
+    db: Session = Depends(get_db),
+):
+    """当前星球各套明细（含未开始），供首页「兑换」抽屉使用。"""
+    try:
+        kp_id = uuid.UUID(knowledge_point_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="knowledge_point_id 非法")
+    kp = db.get(KnowledgePoint, kp_id)
+    if kp is None:
+        raise HTTPException(status_code=404, detail="知识点不存在")
+    if kp.level != user.level:
+        raise HTTPException(
+            status_code=409,
+            detail={"detail": "该星球不属于当前等级", "code": "LEVEL_MISMATCH"},
+        )
+
+    all_sets = kp_set_numbers(db, kp.id)
+    current = current_set_no(db, user.id, kp.id)
+    sp_map = {
+        sp.set_no: sp
+        for sp in db.execute(
+            select(SetProgress).where(
+                SetProgress.user_id == user.id,
+                SetProgress.knowledge_point_id == kp.id,
+            )
+        ).scalars()
+    }
+    sets = []
+    for set_no in all_sets:
+        sp = sp_map.get(set_no)
+        total = db.execute(
+            select(func.count())
+            .select_from(Question)
+            .where(Question.knowledge_point_id == kp.id, Question.set_no == set_no)
+        ).scalar_one()
+        fl = rewards.count_flowers(db, user.id, kp.id, set_no)
+        stars = (sp.stars_earned or 0) if sp else 0
+        medals = (sp.medals_granted or 0) if sp else 0
+        if sp is not None:
+            status = "completed"
+        elif set_no == current:
+            status = "in_progress"
+        else:
+            status = "not_started"
+        sets.append(
+            PlanetSetOut(
+                set_no=set_no,
+                total_count=int(total),
+                flowers=fl,
+                stars=int(stars),
+                medals_granted=int(medals),
+                exchangeable_stars=rewards.exchangeable_stars_for(fl, int(stars)),
+                can_exchange_medal=rewards.can_exchange_medal_for(int(stars), int(medals)),
+                is_complete=bool(
+                    total
+                    and (fl >= total or (sp is not None and (sp.correct_count or 0) >= total))
+                ),
+                status=status,
+                is_current=(set_no == current),
+            )
+        )
+    return PlanetSetsResponse(
+        knowledge_point_id=str(kp.id),
+        name=kp.name,
+        level=kp.level,
+        total_sets=len(all_sets),
+        medals=rewards.planet_medal_count(db, user.id, kp.id),
+        mastered_sets=sum(1 for x in sets if x.is_complete),
+        sets=sets,
     )

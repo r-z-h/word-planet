@@ -28,11 +28,12 @@
         :set-no="setNo || 1"
         :set-total="setTotal || 15"
         :done="setDone"
-        :segs="segs"
+        :segs="segObjs"
         :flowers="isPurePractice ? null : progress.setFlowers"
         :kp-total-sets="kpTotalSets"
         :kp-done-sets="kpDoneSets"
         @exit="askExit"
+        @seek="onSeek"
       />
       <div v-if="question" class="v2-body">
         <PlanetEat
@@ -70,6 +71,13 @@
           :lit-count="okCount"
           @submit="onPick"
         />
+      </div>
+      <div v-else-if="pendingLeft" class="v2-body pending">
+        <div class="pending-box">
+          <div class="pending-title">还有未完成的题目</div>
+          <p class="wp2-muted">可点上方的白色路段条进入，或点下面按钮继续。</p>
+          <button class="wp2-btn gold" @click="loadNextTodo">继续未完成题目 →</button>
+        </div>
       </div>
       <div v-else class="v2-body">
         <el-skeleton :rows="5" animated />
@@ -238,6 +246,8 @@ const okCount = ref(0) // 本关已答对题数（驱动养成）
 const combo = ref(0) // 连击（驱动四档动作 / 连击显示）
 const heart = ref(3) // 命（纯视觉）
 const segs = ref([]) // 15 段路段条：'ok' | 'no'
+const segObjs = ref([]) // 当前套题目状态图 [{id, state:'ok'|'no'|'todo'}]
+const pendingLeft = ref(false) // 只剩跳过的未做题时，提示可点路段进入
 const wallWords = ref([]) // 玩法 B 的单词墙（拼对过的词）
 
 const remaining = computed(() => progress.todayTask?.target_count ?? 0)
@@ -371,10 +381,11 @@ async function next(excludeId = '') {
   feedback.value = null
   try {
     const url = pronMode.value ? '/pronunciation/next' : '/question/next'
-    const excluded = [...history.value.map((q) => q.id), excludeId].filter(Boolean)
-    const params = excluded.length ? { exclude_id: excluded.join(',') } : {}
+    // 只排除"本次刚跳过的那道题"，不再累积历史（否则最后一题会被永久排除 → 这一套没有可出的题）
+    const params = excludeId ? { exclude_id: excludeId } : {}
     const { data } = await http.get(url, { params })
     question.value = data.question
+    pendingLeft.value = false
     // 玩法 C（听力）按「每题 3 次机会」算：进新题重置心
     if (data.question?.question_type === 'listening') heart.value = 3
     if (data.set_no) {
@@ -384,6 +395,7 @@ async function next(excludeId = '') {
     }
     kpTotalSets.value = data.kp_total_sets || kpTotalSets.value
     kpDoneSets.value = data.kp_done_sets || kpDoneSets.value
+    refreshSegMap()
   } catch (e) {
     const code = e?.response?.data?.detail?.code
     if (code === 'KNOWLEDGE_POINT_FINISHED' || code === 'SET_FINISHED') {
@@ -392,9 +404,61 @@ async function next(excludeId = '') {
       await loadReviewInfo()
       return
     }
+    if (code === 'EMPTY_SET' || code === 'NO_QUESTION') {
+      question.value = null
+      pendingLeft.value = true
+      refreshSegMap()
+      return
+    }
     ElMessage.error(apiError(e))
   }
 }
+async function refreshSegMap() {
+  if (reviewMode.value) return
+  try {
+    const { data } = await http.get('/question/set-map')
+    const curId = question.value?.id
+    segObjs.value = (data.items || []).map((it) =>
+      curId && it.id === curId ? { ...it, state: 'cur' } : it
+    )
+  } catch {
+    /* 忽略 */
+  }
+}
+
+function onSeek(item) {
+  if (!item || !item.id) return
+  if (item.state === 'todo') loadOne(item.id)
+  else ElMessage.info('这道题已作答')
+}
+
+async function loadOne(questionId) {
+  try {
+    const url = pronMode.value ? '/pronunciation/one' : '/question/one'
+    const key = pronMode.value ? 'word_id' : 'question_id'
+    const { data } = await http.get(url, { params: { [key]: questionId } })
+    question.value = data.question
+    feedback.value = null
+    locked.value = false
+    pendingLeft.value = false
+    if (data.question?.question_type === 'listening') heart.value = 3
+    setNo.value = data.set_no
+    setTotal.value = data.set_total
+    setDone.value = data.set_done
+    kpTotalSets.value = data.kp_total_sets || kpTotalSets.value
+    kpDoneSets.value = data.kp_done_sets || kpDoneSets.value
+    refreshSegMap()
+  } catch (e) {
+    ElMessage.error(apiError(e))
+  }
+}
+
+function loadNextTodo() {
+  const t = segObjs.value.find((s) => s.state === 'todo')
+  if (t) loadOne(t.id)
+  else refreshSegMap()
+}
+
 function skipNext() {
   if (!question.value) return
   const current = question.value
@@ -713,6 +777,17 @@ onBeforeRouteLeave(async () => {
   justify-content: center;
   padding: 10px 0;
 }
+.v2-body.pending { flex-direction: column; }
+.pending-box {
+  text-align: center;
+  background: var(--wp2-panel);
+  border: 2px solid rgba(255, 226, 168, 0.22);
+  border-radius: 16px;
+  padding: 26px 22px;
+  max-width: 420px;
+}
+.pending-title { font-size: 20px; font-weight: 900; color: var(--wp2-ink); margin-bottom: 8px; }
+.pending-box .wp2-btn { margin-top: 14px; }
 .v2-nav {
   display: flex;
   align-items: center;

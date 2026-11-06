@@ -18,7 +18,7 @@
     <div v-else-if="done" class="card" style="text-align: center; padding: 40px 20px">
       <div style="font-size: 56px">🌟</div>
       <h2 class="title">这一轮练完了</h2>
-      <p class="muted">答对 2 次的题会从错题本里移出去。</p>
+      <p class="muted">连对 3 次（每次间隔 ≥10 分钟）的题会移出错题本，并补回 1 朵花。</p>
       <el-button type="primary" size="large" @click="$router.push('/wrong')">
         回错题本
       </el-button>
@@ -26,7 +26,10 @@
 
     <div v-else-if="question" class="card">
       <div class="muted" style="margin-bottom: 8px">
-        错过 {{ question.error_count }} 次 · 已连对 {{ question.consecutive_correct }}/2
+        错过 {{ question.error_count }} 次 · 已连对 {{ question.consecutive_correct }}/{{ MASTERY_NEEDED }}
+      </div>
+      <div class="hint">
+        防抢记：同一题两次答对需间隔 {{ COOLDOWN_MINUTES }} 分钟才计下一次连对；连对 {{ MASTERY_NEEDED }} 次会移出错题本并补 1 朵花。
       </div>
 
       <QuestionRenderer
@@ -41,6 +44,20 @@
           :title="feedback.is_correct ? '答对了 ✅' : `答错了，正确答案：${feedback.correct_answer}`"
           :type="feedback.is_correct ? 'success' : 'error'"
           :closable="false"
+        />
+        <el-alert
+          v-if="feedback.is_correct && feedback.counted === false && feedback.cooldown_remaining > 0"
+          :title="`答对啦！但距上次答对不足 ${COOLDOWN_MINUTES} 分钟，本次不计入连对（防抢记）。约 ${Math.ceil(feedback.cooldown_remaining / 60)} 分钟后再来可继续累计～`"
+          type="warning"
+          :closable="false"
+          style="margin-top: 10px"
+        />
+        <el-alert
+          v-if="feedback.flower_gained"
+          title="补花 +1 🌸 这道题的花已经补回来了！"
+          type="success"
+          :closable="false"
+          style="margin-top: 10px"
         />
         <div v-if="feedback.explanation" class="explain">
           <div class="explain-title">解析</div>
@@ -59,7 +76,7 @@
           style="width: 100%; margin-top: 16px"
           @click="advance"
         >
-          下一题
+          {{ singleMode ? '返回错题本' : '下一题' }}
         </el-button>
       </div>
     </div>
@@ -68,13 +85,17 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import http, { apiError } from '../api/http'
 import QuestionRenderer from '../components/QuestionRenderer.vue'
 import StarField from '../components/StarField.vue'
 
 const route = useRoute()
+const router = useRouter()
+
+const MASTERY_NEEDED = 3
+const COOLDOWN_MINUTES = 10
 
 const question = ref(null)
 const loading = ref(true)
@@ -89,9 +110,13 @@ const scope = route.query.scope || ''
 const batchMode = ref(!!scope)
 const batchItems = ref([])
 const batchIdx = ref(0)
+// 单独练一题（从错题本某一行进入）
+const singleId = route.query.qid || ''
+const singleMode = ref(!!singleId)
 
 onMounted(() => {
   if (batchMode.value) loadBatch()
+  else if (singleMode.value) loadOne()
   else next()
 })
 
@@ -149,6 +174,22 @@ async function onSubmit(answer) {
   }
 }
 
+async function loadOne() {
+  feedback.value = null
+  loading.value = true
+  try {
+    const { data } = await http.get('/practice/one', { params: { question_id: singleId } })
+    question.value = data.question
+    remaining.value = data.remaining
+    kpName.value = data.question.knowledge_point_name
+    done.value = false
+  } catch (e) {
+    ElMessage.error(apiError(e))
+  } finally {
+    loading.value = false
+  }
+}
+
 async function loadBatch() {
   feedback.value = null
   loading.value = true
@@ -178,6 +219,10 @@ async function loadBatch() {
 
 function advance() {
   feedback.value = null
+  if (singleMode.value) {
+    router.push('/wrong')
+    return
+  }
   if (batchMode.value) {
     if (batchIdx.value < batchItems.value.length - 1) {
       batchIdx.value += 1
@@ -208,5 +253,11 @@ function advance() {
   font-weight: 800;
   margin-bottom: 6px;
   color: var(--wp2-gold);
+}
+.hint {
+  font-size: 12px;
+  color: var(--wp2-dim);
+  line-height: 1.5;
+  margin-bottom: 10px;
 }
 </style>

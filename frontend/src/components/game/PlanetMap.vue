@@ -40,7 +40,7 @@
       <span class="nm">{{ p.name }}</span>
       <span class="st">{{ stText(p) }}</span>
       <span v-if="!p.pure && !p.locked" class="medal">
-        <span class="em">{{ medalEmoji(p) }}</span>{{ p.medals }}
+        <span class="em"><MedalIcon :icon="medalEmoji(p)" /></span>{{ p.medals }}
       </span>
       <span v-if="p.pure && !p.locked" class="puretag" :class="{ ok: p.is_complete }">
         {{ p.is_complete ? '✓ 已完成' : '未完成' }}
@@ -56,6 +56,8 @@
 </template>
 
 <script setup>
+import MedalIcon from '../MedalIcon.vue'
+
 const props = defineProps({
   planets: { type: Array, default: () => [] },
   gateReady: { type: Boolean, default: false },
@@ -98,15 +100,7 @@ function stText(p) {
   return `${p.completed_sets} / ${p.total_sets} 套` + (p.is_current ? ' · 当前' : '')
 }
 function medalEmoji(p) {
-  return (
-    {
-      基础问候词: '🥚',
-      常用单词: '🐻',
-      简单拼写: '✍️',
-      单词跟读: '🐦',
-      拼写进阶: '🔮'
-    }[p.name] || '🏅'
-  )
+  return p?.medal_icon || '🏅'
 }
 </script>
 

@@ -175,6 +175,107 @@ def next_question(
     )
 
 
+@router.get("/question/set-map")
+def set_map(user: User = Depends(require_tested), db: Session = Depends(get_db)):
+    """当前套的题目状态图（供路段条显示/跳转）。state: ok/no/todo。"""
+    kp = resolve_current_kp(db, user)
+    if kp is None:
+        return {"set_no": None, "set_total": 0, "items": []}
+    set_no = current_set_no(db, user.id, kp.id)
+    if set_no is None:
+        return {"set_no": None, "set_total": 0, "items": []}
+    qs = list(
+        db.execute(
+            select(Question)
+            .where(Question.knowledge_point_id == kp.id, Question.set_no == set_no)
+            .order_by(Question.id)
+        ).scalars()
+    )
+    status: dict = {}
+    if qs:
+        rows = db.execute(
+            select(Attempt.question_id, Attempt.is_correct).where(
+                Attempt.user_id == user.id,
+                Attempt.question_id.in_([q.id for q in qs]),
+            )
+        ).all()
+        for qid, ok in rows:
+            if ok:
+                status[qid] = "ok"
+            elif qid not in status:
+                status[qid] = "no"
+    return {
+        "set_no": set_no,
+        "set_total": len(qs),
+        "items": [{"id": str(q.id), "state": status.get(q.id, "todo")} for q in qs],
+    }
+
+
+@router.get("/question/one", response_model=QuestionNextResponse)
+def one_question(
+    question_id: str,
+    user: User = Depends(require_tested),
+    db: Session = Depends(get_db),
+):
+    """按题号取当前套里的一道未作答题（供路段条点击跳转）。"""
+    kp = resolve_current_kp(db, user)
+    if kp is None:
+        raise HTTPException(
+            status_code=409, detail={"detail": "没有当前知识点", "code": "NO_CURRENT_KNOWLEDGE_POINT"}
+        )
+    set_no = current_set_no(db, user.id, kp.id)
+    if set_no is None:
+        raise HTTPException(
+            status_code=409, detail={"detail": "这个知识点的题都学完了", "code": "KNOWLEDGE_POINT_FINISHED"}
+        )
+    try:
+        qid = uuid.UUID(question_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="question_id 非法")
+    question = db.get(Question, qid)
+    if question is None:
+        raise HTTPException(status_code=404, detail="题目不存在")
+    if question.knowledge_point_id != kp.id or question.set_no != set_no:
+        raise HTTPException(status_code=409, detail={"detail": "不是当前套的题", "code": "WRONG_SET"})
+    if question.question_type == "pronunciation":
+        raise HTTPException(
+            status_code=409,
+            detail={"detail": "跟读题请走 /api/pronunciation/next", "code": "USE_PRONUNCIATION_ENDPOINT"},
+        )
+    answered = db.execute(
+        select(Attempt.id).where(Attempt.user_id == user.id, Attempt.question_id == question.id).limit(1)
+    ).first()
+    if answered:
+        raise HTTPException(status_code=409, detail={"detail": "这道题已作答", "code": "ALREADY_ANSWERED"})
+
+    progress = db.get(Progress, user.id)
+    if progress is not None and progress.last_question_id != question.id:
+        progress.last_question_id = question.id
+        db.commit()
+
+    total, done = _set_counts(db, user.id, kp.id, set_no)
+    tiles = None
+    if question.question_type == "spelling":
+        tiles = tiles_service.tiles_for(question.id, str(question.answer))
+    summary = set_summary(db, user.id, kp)
+    return QuestionNextResponse(
+        question={
+            "id": str(question.id),
+            "question_type": question.question_type,
+            "stem": question.stem,
+            "options": question.options,
+            "knowledge_point_id": str(question.knowledge_point_id),
+            "tiles": tiles,
+        },
+        set_no=set_no,
+        set_total=total,
+        set_done=done,
+        knowledge_point_name=kp.name,
+        kp_total_sets=summary["total_sets"],
+        kp_done_sets=summary["completed_sets"],
+    )
+
+
 @router.post("/answer/submit", response_model=AnswerSubmitResponse)
 def submit_answer(
     payload: AnswerSubmitRequest,

@@ -51,8 +51,16 @@ class KnowledgePoint(Base):
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
     question_type: Mapped[str] = mapped_column(String(32), nullable=False)
-    # 是否计入「本级能力测试」的门槛（字母表、听力理解这类题量固定的不计）
+    # 是否计入「本级能力测试」的门槛
     counts_for_gate: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # 星球徽记（v2）：名称/图标
+    medal_name: Mapped[str] = mapped_column(String(64), nullable=False, default="", server_default="")
+    medal_icon: Mapped[str] = mapped_column(String(128), nullable=False, default="", server_default="")
+    # 门槛类型：medals=集齐 N 枚星球徽记；completion=只判完成（如字母表）
+    gate_mode: Mapped[str] = mapped_column(String(16), nullable=False, default="medals", server_default="medals")
+    gate_required: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    # 是否产花（字母表纯练不产花）
+    produces_flowers: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
 
     __table_args__ = (
         UniqueConstraint("level", "sort_order", name="uq_kp_level_sort"),

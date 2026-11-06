@@ -62,31 +62,63 @@ def finish_set(c, correct=True):
     return None
 
 
+def exchange_medal(c, kp_id, set_no):
+    """把某套的花兑换成 1 枚星球徽章（15 花 → 5 星 → 1 徽章）。"""
+    for _ in range(5):
+        r = c.post(
+            "/api/reward/exchange",
+            json={
+                "knowledge_point_id": kp_id,
+                "set_no": set_no,
+                "from_kind": "flower",
+                "amount": 1,
+                "idempotency_key": uuid.uuid4().hex,
+            },
+        )
+        if r.status_code != 200:
+            return False
+    r = c.post(
+        "/api/reward/exchange",
+        json={
+            "knowledge_point_id": kp_id,
+            "set_no": set_no,
+            "from_kind": "star",
+            "amount": 1,
+            "idempotency_key": uuid.uuid4().hex,
+        },
+    )
+    return r.status_code == 200
+
+
 def main():
     c, uid, kp_id = make_user()
 
     ov = c.get("/api/lesson/overview").json()
     check("overview 返回 2 个 L1 知识点", len(ov["knowledge_points"]) == 2, str(len(ov["knowledge_points"])))
     check("初始未达门槛", ov["gate_ready"] is False)
-    check("字母表不计入门槛", any(k["counts_for_gate"] is False for k in ov["knowledge_points"]))
+    base = next(k for k in ov["knowledge_points"] if k["name"] == "基础问候词")
+    letter = next(k for k in ov["knowledge_points"] if k["name"] == "字母表")
+    check("字母表为完成态门槛", letter["gate_mode"] == "completion")
+    check("基础问候词需 5 枚徽记", base["gate_required"] == 5)
 
     nxt = c.get("/api/question/next").json()
     check("第 1 套、共 15 题", nxt["set_no"] == 1 and nxt["set_total"] == 15, f"{nxt['set_no']}/{nxt['set_total']}")
 
-    s1 = finish_set(c)
-    check("答完第 1 套触发完成", s1 == 1, str(s1))
-
-    prog = c.get("/api/progress").json()
-    check("进度：已完成 1 套、当前第 2 套", prog["completed_sets"] == 1 and prog["set_no"] == 2,
-          f"{prog['completed_sets']}/{prog['set_no']}")
-
-    s2 = finish_set(c)
-    s3 = finish_set(c)
-    check("第 2、3 套依次完成", s2 == 2 and s3 == 3, f"{s2},{s3}")
+    for s in range(1, 6):
+        got = finish_set(c)
+        check(f"第 {s} 套完成", got == s, str(got))
+        check(f"第 {s} 套兑换徽章", exchange_medal(c, kp_id, s))
 
     ov2 = c.get("/api/lesson/overview").json()
-    check("三套后达门槛", ov2["gate_ready"] is True)
-    check("能力测试可点", ov2["can_test"] is True)
+    check("5 枚徽记但字母表未完成 -> 未达门槛", ov2["gate_ready"] is False)
+
+    c.post("/api/lesson/select", json={"knowledge_point_id": letter["id"]})
+    let = finish_set(c)
+    check("字母表完成（15 题全对）", let == 1, str(let))
+
+    ov3 = c.get("/api/lesson/overview").json()
+    check("字母表完成 + 5 枚徽记 -> 达门槛", ov3["gate_ready"] is True)
+    check("能力测试可点", ov3["can_test"] is True)
 
     st = c.get("/api/level-test/status").json()
     check("status 可测", st["can_test"] is True)
@@ -94,7 +126,7 @@ def main():
     # 重复做已完成的套：不应增加套数
     c.post("/api/lesson/select", json={"knowledge_point_id": kp_id})
     before = c.get("/api/progress").json()["completed_sets"]
-    check("重复进入不改变套数", before == 3, str(before))
+    check("重复进入不改变套数", before == 5, str(before))
 
     # 能力测试：10 题答对 8 题
     start = c.post("/api/level-test/start")
