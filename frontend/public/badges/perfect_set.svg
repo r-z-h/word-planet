@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="perfect set">
+  <polygon points="16,24 32,8 48,24 32,56" fill="#a5d8ff" stroke="#4dabf7" stroke-width="2"/>
+  <polyline points="16,24 32,30 48,24" fill="none" stroke="#4dabf7" stroke-width="1.5"/>
+  <line x1="32" y1="8" x2="32" y2="30" stroke="#4dabf7" stroke-width="1.5"/>
+  <line x1="24" y1="16" x2="28" y2="30" stroke="#4dabf7" stroke-width="1"/>
+  <line x1="40" y1="16" x2="36" y2="30" stroke="#4dabf7" stroke-width="1"/>
+  <path d="M50 10 l1.5 4 4 1.5 -4 1.5 -1.5 4 -1.5 -4 -4 -1.5 4 -1.5z" fill="#fff3bf"/>
+</svg>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><style>
+body{margin:0;background:radial-gradient(120% 90% at 30% 0%,#2a1550,#140b28 70%);font-family:"Microsoft YaHei",sans-serif;color:#fff1d6;padding:22px 26px}
+h1{font-size:18px;margin:0 0 4px}.sub{color:#c9b8f0;font-size:12px;margin-bottom:14px}
+.sec{margin-bottom:26px}
+.stitle{font-size:15px;font-weight:900;color:#ffd166;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:900px}
+.card{background:rgba(255,246,225,.06);border:1.5px solid rgba(255,232,180,.18);border-radius:14px;padding:14px 10px;text-align:center;position:relative}
+.ic{height:50px;display:flex;align-items:center;justify-content:center;font-size:40px}
+.ic img{width:46px;height:46px;object-fit:contain}
+.nm{font-weight:900;font-size:13px;margin-top:6px}
+.cd{color:#9f8fc7;font-size:10.5px;margin-top:3px;line-height:1.35;min-height:26px}
+.tag{display:inline-block;margin-top:6px;font-size:9.5px;font-weight:900;padding:2px 8px;border-radius:99px;background:rgba(99,230,190,.16);color:#63e6be;border:1px solid rgba(99,230,190,.4)}
+.card.locked{opacity:.5;filter:grayscale(1)}
+.card.locked .tag{background:rgba(255,255,255,.08);color:#b6a9d6;border-color:rgba(255,255,255,.15)}
+.lock{position:absolute;top:8px;right:9px;font-size:12px;opacity:.8}
+/* 分组图鉴 */
+.cat{margin-bottom:12px;max-width:900px}
+.catn{font-size:11px;color:#c9b8f0;font-weight:900;margin:0 0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:center;gap:7px;background:rgba(255,246,225,.06);border:1.5px solid rgba(255,232,180,.18);border-radius:99px;padding:6px 12px 6px 8px}
+.chip .ci{font-size:20px;width:24px;text-align:center}
+.chip .ci img{width:22px;height:22px;object-fit:contain;vertical-align:middle}
+.chip .cn{font-size:12px;font-weight:800}
+.chip.locked{opacity:.5;filter:grayscale(1)}
+</style></head><body>
+
+<div class="sec">
+<div class="stitle">方案 A · 网格卡片（推荐）— 与"成长徽章"同款卡片，未解锁置灰 + 🔒</div>
+<div class="grid">
+  <div class="card"><span class="lock">🔓</span><div class="ic">🔥</div><div class="nm">连续三天</div><div class="cd">连续学习 ≥3 天</div><span class="tag">已解锁</span></div>
+  <div class="card"><span class="lock">🔓</span><div class="ic">💯</div><div class="nm">百题达成</div><div class="cd">累计答对 ≥100 题</div><span class="tag">已解锁</span></div>
+  <div class="card"><span class="lock">🔓</span><div class="ic">🎓</div><div class="nm">初学有成</div><div class="cd">完成第 1 个知识点</div><span class="tag">已解锁</span></div>
+  <div class="card locked"><span class="lock">🔒</span><div class="ic"><img src="../../frontend/public/badges/streak7.svg"></div><div class="nm">连续七天</div><div class="cd">连续学习 ≥7 天</div><span class="tag">未解锁</span></div>
+  <div class="card locked"><span class="lock">🔒</span><div class="ic">🏫</div><div class="nm">学有所成</div><div class="cd">完成当前等级全部知识点</div><span class="tag">未解锁</span></div>
+  <div class="card locked"><span class="lock">🔒</span><div class="ic"><img src="../../frontend/public/badges/perfect_set.svg"></div><div class="nm">完美一套</div><div class="cd">有一套 15 题全对</div><span class="tag">未解锁</span></div>
+  <div class="card locked"><span class="lock">🔒</span><div class="ic">🎖️</div><div class="nm">能力初试</div><div class="cd">通过 1 次能力测试</div><span class="tag">未解锁</span></div>
+  <div class="card locked"><span class="lock">🔒</span><div class="ic"><img src="../../frontend/public/badges/ultimate.svg"></div><div class="nm">寰宇圆满·万物生花</div><div class="cd">所有产花题目都拿到过花 + 字母表已完成</div><span class="tag">未解锁</span></div>
+</div>
+</div>
+
+<div class="sec">
+<div class="stitle">方案 B · 分组图鉴 — 按"坚持 / 答题 / 掌握 / 挑战"分组的小胶囊，未解锁置灰</div>
+<div class="cat"><div class="catn">坚持</div><div class="chips">
+  <div class="chip"><span class="ci">🔥</span><span class="cn">连续三天 ✓</span></div>
+  <div class="chip locked"><span class="ci"><img src="../../frontend/public/badges/streak7.svg"></span><span class="cn">连续七天 🔒</span></div>
+</div></div>
+<div class="cat"><div class="catn">答题</div><div class="chips">
+  <div class="chip"><span class="ci">💯</span><span class="cn">百题达成 ✓</span></div>
+</div></div>
+<div class="cat"><div class="catn">掌握</div><div class="chips">
+  <div class="chip"><span class="ci">🎓</span><span class="cn">初学有成 ✓</span></div>
+  <div class="chip locked"><span class="ci">🏫</span><span class="cn">学有所成 🔒</span></div>
+  <div class="chip locked"><span class="ci"><img src="../../frontend/public/badges/perfect_set.svg"></span><span class="cn">完美一套 🔒</span></div>
+</div></div>
+<div class="cat"><div class="catn">挑战 / 终极</div><div class="chips">
+  <div class="chip locked"><span class="ci">🎖️</span><span class="cn">能力初试 🔒</span></div>
+  <div class="chip locked"><span class="ci"><img src="../../frontend/public/badges/ultimate.svg"></span><span class="cn">寰宇圆满·万物生花 🔒</span></div>
+</div></div>
+</div>
+
+</body></html>

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><style>
+body{margin:0;background:radial-gradient(120% 90% at 30% 0%,#2a1550,#140b28 70%);font-family:"Microsoft YaHei",sans-serif;color:#fff1d6;padding:24px}
+h1{font-size:18px;margin:0 0 4px}.sub{color:#c9b8f0;font-size:12px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:880px}
+.card{background:rgba(255,246,225,.06);border:1.5px solid rgba(255,232,180,.18);border-radius:14px;padding:18px 8px;text-align:center}
+.ic{height:56px;display:flex;align-items:center;justify-content:center;font-size:44px}
+.ic img{width:52px;height:52px;object-fit:contain}
+.nm{font-weight:800;margin-top:8px}.cd{color:#9f8fc7;font-size:11px;margin-top:3px}
+.ult{grid-column:span 2;background:linear-gradient(180deg,rgba(255,214,120,.14),rgba(255,143,177,.08));border-color:rgba(255,214,120,.5)}
+.ult .nm{color:#ffd166;font-size:16px}
+</style></head><body>
+<h1>成就徽章 · 最终效果（徽章墙）</h1>
+<div class="sub">金色标签为保留 emoji，其余为手绘 SVG；最高成就单独高亮</div>
+<div class="grid">
+ <div class="card"><div class="ic">🔥</div><div class="nm">连续三天</div><div class="cd">连续学习 ≥3 天（历史保留）</div></div>
+ <div class="card"><div class="ic"><img src="../../frontend/public/badges/streak7.svg"></div><div class="nm">连续七天</div><div class="cd">连续学习 ≥7 天</div></div>
+ <div class="card"><div class="ic">💯</div><div class="nm">百题达成</div><div class="cd">累计答对 ≥100 题</div></div>
+ <div class="card"><div class="ic">🎓</div><div class="nm">初学有成</div><div class="cd">完成第 1 个知识点</div></div>
+ <div class="card"><div class="ic">🏫</div><div class="nm">学有所成</div><div class="cd">完成当前等级全部知识点</div></div>
+ <div class="card"><div class="ic"><img src="../../frontend/public/badges/perfect_set.svg"></div><div class="nm">完美一套</div><div class="cd">一套 15 题全对</div></div>
+ <div class="card"><div class="ic">🎖️</div><div class="nm">能力初试</div><div class="cd">通过 1 次能力测试</div></div>
+ <div class="card ult"><div class="ic"><img src="../../frontend/public/badges/ultimate.svg"></div><div class="nm">寰宇圆满·万物生花</div><div class="cd">所有产花题目都拿到过花 + 字母表已完成</div></div>
+</div>
+</body></html>

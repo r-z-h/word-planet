@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><style>
+body{margin:0;background:radial-gradient(120% 90% at 50% 0%,#241245,#0d0619 70%);font-family:"Microsoft YaHei",sans-serif;color:#fff1d6;display:flex;justify-content:center;gap:34px;padding:26px 16px 34px}
+.item{text-align:center;width:300px}
+.badge{width:280px;height:280px;margin:0 auto;display:grid;place-items:center;background:radial-gradient(circle at 50% 45%,rgba(255,214,120,.18),rgba(120,80,200,.06) 55%,transparent 72%);border-radius:50%}
+.badge svg{width:250px;height:250px;filter:drop-shadow(0 10px 26px rgba(0,0,0,.55))}
+.cap{margin-top:10px;font-size:16px;font-weight:900;color:#ffd166}
+.sub{font-size:11.5px;color:#c9b8f0;margin-top:4px}
+</style></head><body>
+
+<!-- A 皇冠星球 -->
+<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <radialGradient id="pA" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#9fe7ff"/><stop offset=".5" stop-color="#4dabf7"/><stop offset="1" stop-color="#3b1d7a"/></radialGradient>
+  <linearGradient id="gA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3bf"/><stop offset="1" stop-color="#f59f00"/></linearGradient>
+  <filter id="glowA" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ </defs>
+ <ellipse cx="120" cy="132" rx="92" ry="26" transform="rotate(-16 120 132)" fill="none" stroke="#ffd166" stroke-width="7" opacity=".85"/>
+ <ellipse cx="120" cy="132" rx="92" ry="26" transform="rotate(-16 120 132)" fill="none" stroke="#fff3bf" stroke-width="2" opacity=".7"/>
+ <circle cx="120" cy="132" r="62" fill="url(#pA)" stroke="#20104a" stroke-width="3" filter="url(#glowA)"/>
+ <ellipse cx="102" cy="112" rx="20" ry="13" fill="#ffffff" opacity=".35"/>
+ <path d="M96 90 L102 62 L114 77 L120 57 L126 77 L138 62 L144 90 Z" fill="url(#gA)" stroke="#c47f00" stroke-width="2.5" stroke-linejoin="round"/>
+ <rect x="94" y="90" width="52" height="9" rx="4" fill="#f59f00" stroke="#b8860b" stroke-width="2"/>
+ <circle cx="102" cy="62" r="3.2" fill="#ff6b6b"/><circle cx="120" cy="57" r="3.2" fill="#74c0fc"/><circle cx="138" cy="62" r="3.2" fill="#63e6be"/>
+ <circle cx="109" cy="94" r="2.4" fill="#ff8787"/><circle cx="120" cy="94" r="2.4" fill="#ffd43b"/><circle cx="131" cy="94" r="2.4" fill="#74c0fc"/>
+ <g transform="translate(58,112) scale(1.1)"><circle cx="0" cy="-5" r="3.2" fill="#ff9db4"/><circle cx="4.8" cy="-1.5" r="3.2" fill="#ff9db4"/><circle cx="3" cy="4" r="3.2" fill="#ff9db4"/><circle cx="-3" cy="4" r="3.2" fill="#ff9db4"/><circle cx="-4.8" cy="-1.5" r="3.2" fill="#ff9db4"/><circle r="2.6" fill="#ffd43b"/></g>
+ <g transform="translate(182,120) scale(1.1)"><circle cx="0" cy="-5" r="3.2" fill="#ff9db4"/><circle cx="4.8" cy="-1.5" r="3.2" fill="#ff9db4"/><circle cx="3" cy="4" r="3.2" fill="#ff9db4"/><circle cx="-3" cy="4" r="3.2" fill="#ff9db4"/><circle cx="-4.8" cy="-1.5" r="3.2" fill="#ff9db4"/><circle r="2.6" fill="#ffd43b"/></g>
+ <path d="M186 66 l2 7 7 2 -7 2 -2 7 -2 -7 -7 -2 7 -2z" fill="#fff3bf"/>
+ <path d="M52 72 l1.6 5 5 1.6 -5 1.6 -1.6 5 -1.6 -5 -5 -1.6 5 -1.6z" fill="#fff3bf"/>
+</svg>
+<div class="cap">方案 A · 皇冠星球</div><div class="sub">蓝紫星球 + 金色星环 + 皇冠 + 点缀小花</div>
+
+<!-- B 花环星球 -->
+<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <radialGradient id="pB" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#ffe3f1"/><stop offset=".5" stop-color="#ff9db4"/><stop offset="1" stop-color="#7048e8"/></radialGradient>
+  <filter id="glowB" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ </defs>
+ <g filter="url(#glowB)">
+ <g><circle cx="0" cy="-5" r="3" fill="#fff"/><circle cx="4.8" cy="-1.5" r="3" fill="#fff"/><circle cx="3" cy="4" r="3" fill="#fff"/><circle cx="-3" cy="4" r="3" fill="#fff"/><circle cx="-4.8" cy="-1.5" r="3" fill="#fff"/><circle r="2.4" fill="#ffd43b"/></g>
+ </g>
+ <circle cx="120" cy="132" r="62" fill="url(#pB)" stroke="#3b1d7a" stroke-width="3" filter="url(#glowB)"/>
+ <ellipse cx="100" cy="110" rx="18" ry="12" fill="#ffffff" opacity=".4"/>
+ <!-- flower ring -->
+ <g fill="#ff6b9d" stroke="#e64980" stroke-width="1">
+  <g transform="translate(120,44)"><circle cx="0" cy="-5" r="4"/><circle cx="4.8" cy="-1.5" r="4"/><circle cx="3" cy="4" r="4"/><circle cx="-3" cy="4" r="4"/><circle cx="-4.8" cy="-1.5" r="4"/><circle r="3" fill="#ffd43b" stroke="none"/></g>
+  <g transform="translate(171,58)"><circle cx="0" cy="-5" r="4"/><circle cx="4.8" cy="-1.5" r="4"/><circle cx="3" cy="4" r="4"/><circle cx="-3" cy="4" r="4"/><circle cx="-4.8" cy="-1.5" r="4"/><circle r="3" fill="#ffd43b" stroke="none"/></g>
+  <g transform="translate(200,98)"><circle cx="0" cy="-5" r="4"/><circle cx="4.8" cy="-1.5" r="4"/><circle cx="3" cy="4" r="4"/><circle cx="-3" cy="4" r="4"/><circle cx="-4.8" cy="-1.5" r="4"/><circle r="3" fill="#ffd43b" stroke="none"/></g>
+  <g transform="translate(200,150)"><circle cx="0" cy="-5" r="4"/><circle cx="4.8" cy="-1.5" r="4"/><circle cx="3" cy="4" r="4"/><circle cx="-3" cy="4" r="4"/><circle cx="-4.8" cy="-1.5" r="4"/><circle r="3" fill="#ffd43b" stroke="none"/></g>
+  <g transform="translate(171,192)"><circle cx="0" cy="-5" r="4"/><circle cx="4.8" cy="-1.5" r="4"/><circle cx="3" cy="4" r="4"/><circle cx="-3" cy="4" r="4"/><circle cx="-4.8" cy="-1.5" r="4"/><circle r="3" fill="#ffd43b" stroke="none"/></g>
+  <g transform="translate(120,206)"><circle cx="0" cy="-5" r="4"/><circle cx="4.8" cy="-1.5" r="4"/><circle cx="3" cy="4" r="4"/><circle cx="-3" cy="4" r="4"/><circle cx="-4.8" cy="-1.5" r="4"/><circle r="3" fill="#ffd43b" stroke="none"/></g>
+  <g transform="translate(69,192)"><circle cx="0" cy="-5" r="4"/><circle cx="4.8" cy="-1.5" r="4"/><circle cx="3" cy="4" r="4"/><circle cx="-3" cy="4" r="4"/><circle cx="-4.8" cy="-1.5" r="4"/><circle r="3" fill="#ffd43b" stroke="none"/></g>
+  <g transform="translate(40,150)"><circle cx="0" cy="-5" r="4"/><circle cx="4.8" cy="-1.5" r="4"/><circle cx="3" cy="4" r="4"/><circle cx="-3" cy="4" r="4"/><circle cx="-4.8" cy="-1.5" r="4"/><circle r="3" fill="#ffd43b" stroke="none"/></g>
+  <g transform="translate(40,98)"><circle cx="0" cy="-5" r="4"/><circle cx="4.8" cy="-1.5" r="4"/><circle cx="3" cy="4" r="4"/><circle cx="-3" cy="4" r="4"/><circle cx="-4.8" cy="-1.5" r="4"/><circle r="3" fill="#ffd43b" stroke="none"/></g>
+  <g transform="translate(69,58)"><circle cx="0" cy="-5" r="4"/><circle cx="4.8" cy="-1.5" r="4"/><circle cx="3" cy="4" r="4"/><circle cx="-3" cy="4" r="4"/><circle cx="-4.8" cy="-1.5" r="4"/><circle r="3" fill="#ffd43b" stroke="none"/></g>
+ </g>
+ <path d="M196 44 l2 7 7 2 -7 2 -2 7 -2 -7 -7 -2 7 -2z" fill="#fff3bf"/>
+</svg>
+<div class="cap">方案 B · 花环星球</div><div class="sub">粉紫星球 + 一整圈小花环（最贴合"生花"）</div>
+
+<!-- C 星穹王座 -->
+<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <radialGradient id="pC" cx="38%" cy="32%" r="80%"><stop offset="0" stop-color="#fff3bf"/><stop offset=".45" stop-color="#ffd43b"/><stop offset="1" stop-color="#b8860b"/></radialGradient>
+  <linearGradient id="gC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f59f00"/></linearGradient>
+  <filter id="glowC" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ </defs>
+ <ellipse cx="120" cy="150" rx="96" ry="24" fill="none" stroke="#fff3bf" stroke-width="2" opacity=".6"/>
+ <ellipse cx="120" cy="118" rx="88" ry="20" transform="rotate(-24 120 118)" fill="none" stroke="#ffd166" stroke-width="3" opacity=".7"/>
+ <circle cx="120" cy="126" r="56" fill="url(#pC)" stroke="#7a4a00" stroke-width="3" filter="url(#glowC)"/>
+ <ellipse cx="104" cy="108" rx="16" ry="10" fill="#fff" opacity=".5"/>
+ <path d="M92 86 L98 54 L112 70 L120 48 L128 70 L142 54 L148 86 Z" fill="url(#gC)" stroke="#b8860b" stroke-width="2.5" stroke-linejoin="round"/>
+ <rect x="90" y="86" width="60" height="10" rx="4" fill="#f59f00" stroke="#b8860b" stroke-width="2"/>
+ <circle cx="98" cy="54" r="3.4" fill="#ff6b6b"/><circle cx="120" cy="48" r="3.4" fill="#74c0fc"/><circle cx="142" cy="54" r="3.4" fill="#63e6be"/>
+ <circle cx="34" cy="96" r="2" fill="#fff"/><circle cx="206" cy="90" r="2.2" fill="#fff"/><circle cx="196" cy="176" r="1.8" fill="#fff"/><circle cx="44" cy="172" r="2" fill="#fff"/>
+ <path d="M196 60 l2 7 7 2 -7 2 -2 7 -2 -7 -7 -2 7 -2z" fill="#fff3bf"/>
+ <g transform="translate(52,128) scale(.9)"><circle cx="0" cy="-5" r="3" fill="#ff9db4"/><circle cx="4.8" cy="-1.5" r="3" fill="#ff9db4"/><circle cx="3" cy="4" r="3" fill="#ff9db4"/><circle cx="-3" cy="4" r="3" fill="#ff9db4"/><circle cx="-4.8" cy="-1.5" r="3" fill="#ff9db4"/><circle r="2.4" fill="#ffd43b"/></g>
+</svg>
+<div class="cap">方案 C · 星穹王座</div><div class="sub">金色星球 + 双星环 + 皇冠 + 星点（最"王者"）</div>
+</body></html>

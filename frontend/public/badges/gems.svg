@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="gems">
+ <polygon points="20,16 30,24 24,36 12,28" fill="#ff9db4" stroke="#e64980" stroke-width="1.5"/>
+ <polygon points="44,16 54,28 42,36 32,24" fill="#74c0fc" stroke="#1c7ed6" stroke-width="1.5"/>
+ <polygon points="32,32 42,40 32,54 22,40" fill="#63e6be" stroke="#0ca678" stroke-width="1.5"/>
+ <path d="M32 6 l1.5 4 4 1.5 -4 1.5 -1.5 4 -1.5 -4 -4 -1.5 4 -1.5z" fill="#fff3bf"/>
+</svg>

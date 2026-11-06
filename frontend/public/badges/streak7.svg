@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="streak7">
+  <path d="M32 3 C36 9 41 10 41 15 a9 9 0 1 1 -18 0 C23 10 28 9 32 3Z" fill="#ff922b" stroke="#e8590c" stroke-width="1.5"/>
+  <path d="M31 9 c2 3 4 4 4 6 a4 4 0 1 1 -8 0 c0 -2 2 -3 4 -6z" fill="#ffe066"/>
+  <path d="M18 20 h28 v7 a14 14 0 0 1 -28 0 z" fill="#ffd43b" stroke="#f08c00" stroke-width="2"/>
+  <path d="M18 22 h-6 a8 8 0 0 0 8 8" fill="none" stroke="#f08c00" stroke-width="2.5"/>
+  <path d="M46 22 h6 a8 8 0 0 1 -8 8" fill="none" stroke="#f08c00" stroke-width="2.5"/>
+  <rect x="29" y="38" width="6" height="9" fill="#f08c00"/>
+  <rect x="22" y="47" width="20" height="6" rx="2" fill="#e8590c"/>
+</svg>

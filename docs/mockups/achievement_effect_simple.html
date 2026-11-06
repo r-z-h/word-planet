@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>普通成就解锁 · 简约版</title>
+<style>
+  body{margin:0;background:radial-gradient(120% 90% at 30% 0%,#2a1550,#140b28 70%);font-family:"Microsoft YaHei",sans-serif;color:#fff1d6;height:100vh;overflow:hidden}
+  .stage{position:absolute;inset:0;display:grid;place-items:center}
+  .pick{display:flex;gap:14px}
+  .btn{padding:10px 16px;border-radius:12px;border:2px solid rgba(255,232,180,.35);background:rgba(255,246,225,.08);color:#fff1d6;font-weight:800;cursor:pointer}
+  .tip{position:absolute;top:24px;left:0;right:0;text-align:center;color:#c9b8f0;font-size:12px}
+
+  /* ===== 成就解锁卡（简约版） ===== */
+  .toast{
+    position:fixed;right:26px;bottom:26px;width:320px;display:flex;gap:12px;align-items:center;
+    background:linear-gradient(180deg,#2a1a4d,#1e1237);
+    border:2px solid rgba(255,214,120,.55);border-radius:16px;padding:12px 14px;
+    box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 0 1px rgba(255,214,120,.15) inset;
+    transform:translateY(24px) scale(.96);opacity:0;pointer-events:none;
+  }
+  .toast.show{animation:cardIn .45s cubic-bezier(.2,.9,.25,1.2) forwards}
+  .toast.hide{animation:cardOut .4s ease forwards}
+  @keyframes cardIn{to{transform:translateY(0) scale(1);opacity:1}}
+  @keyframes cardOut{to{transform:translateY(16px) scale(.97);opacity:0}}
+  .bwrap{position:relative;width:56px;height:56px;flex:none;display:grid;place-items:center}
+  .bwrap svg,.bwrap .emo{width:48px;height:48px;font-size:38px;line-height:1}
+  .bwrap.pop{animation:pop .6s cubic-bezier(.2,1.4,.3,1.4)}
+  @keyframes pop{0%{transform:scale(.4) rotate(-12deg)}60%{transform:scale(1.18) rotate(6deg)}100%{transform:scale(1) rotate(0)}}
+  .ring{position:absolute;width:56px;height:56px;border-radius:50%;border:2px solid rgba(255,214,120,.9);opacity:0}
+  .ring.go{animation:ring .7s ease-out}
+  @keyframes ring{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.1);opacity:0}}
+  .txt .lab{font-size:9.5px;letter-spacing:.14em;color:#ffd166;font-weight:900}
+  .txt .nm{font-size:15px;font-weight:900;color:#fff1d6;margin-top:2px}
+  .txt .cd{font-size:10.5px;color:#c9b8f0;margin-top:2px}
+  .spark{position:absolute;width:4px;height:4px;border-radius:50%;background:#ffe066;opacity:0}
+  .spark.go{animation:spark .7s ease-out forwards}
+  @keyframes spark{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.2)}}
+</style></head><body>
+<div class="tip">普通成就解锁 · 简约版预览（点下面按钮重播；实际会自动滑入约 1.6s 后收回）</div>
+<div class="stage"><div class="pick">
+  <button class="btn" onclick="play('diamond')">重播：完美一套 💎</button>
+  <button class="btn" onclick="play('grad')">重播：初学有成 🎓</button>
+</div></div>
+
+<div id="toast" class="toast">
+  <div class="bwrap" id="bwrap"><span class="ring" id="ring"></span><span id="icon"></span></div>
+  <div class="txt"><div class="lab">成就解锁</div><div class="nm" id="nm"></div><div class="cd" id="cd"></div></div>
+</div>
+
+<script>
+const DIAMOND = `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+ <polygon points="16,24 32,8 48,24 32,56" fill="#a5d8ff" stroke="#4dabf7" stroke-width="2"/>
+ <polyline points="16,24 32,30 48,24" fill="none" stroke="#4dabf7" stroke-width="1.5"/>
+ <line x1="32" y1="8" x2="32" y2="30" stroke="#4dabf7" stroke-width="1.5"/>
+ <path d="M50 10 l1.5 4 4 1.5 -4 1.5 -1.5 4 -1.5 -4 -4 -1.5 4 -1.5z" fill="#fff3bf"/></svg>`
+const DATA = {
+  diamond: { html: DIAMOND, nm: '完美一套', cd: '一套 15 题全对' },
+  grad: { html: '<span class="emo">🎓</span>', nm: '初学有成', cd: '完成第 1 个知识点' }
+}
+const toast = document.getElementById('toast')
+const bwrap = document.getElementById('bwrap')
+const ring = document.getElementById('ring')
+const iconEl = document.getElementById('icon')
+const nmEl = document.getElementById('nm')
+const cdEl = document.getElementById('cd')
+let timer = null
+function play(key){
+  const d = DATA[key]
+  iconEl.innerHTML = d.html
+  nmEl.textContent = d.nm
+  cdEl.textContent = d.cd
+  toast.classList.remove('hide','show'); void toast.offsetWidth
+  bwrap.classList.remove('pop'); ring.classList.remove('go'); void bwrap.offsetWidth
+  toast.classList.add('show')
+  bwrap.classList.add('pop'); ring.classList.add('go')
+  // sparkles
+  document.querySelectorAll('.spark').forEach(e=>e.remove())
+  for(let i=0;i<6;i++){
+    const s=document.createElement('span'); s.className='spark'
+    const a=(Math.PI*2*i)/6 + Math.random(); const r=26+Math.random()*10
+    s.style.setProperty('--dx', Math.cos(a)*r+'px'); s.style.setProperty('--dy', Math.sin(a)*r+'px')
+    s.style.left='22px'; s.style.top='22px'; bwrap.appendChild(s)
+    requestAnimationFrame(()=>s.classList.add('go'))
+  }
+  clearTimeout(timer)
+  timer = setTimeout(()=>{ toast.classList.add('hide'); toast.classList.remove('show') }, 1600)
+}
+// 打开页面自动演示一次（便于截图/预览）
+window.addEventListener('load', ()=> setTimeout(()=>play('diamond'), 300))
+</script>
+</body></html>

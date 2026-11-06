@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><style>
+body{margin:0;background:radial-gradient(120% 90% at 30% 0%,#2a1550,#140b28 70%);font-family:"Microsoft YaHei",sans-serif;color:#fff1d6;padding:22px 26px}
+.hd{display:flex;justify-content:space-between;align-items:center;max-width:900px;background:rgba(255,246,225,.05);border:1.5px solid rgba(255,232,180,.18);border-radius:16px;padding:14px 18px;margin-bottom:14px}
+.hd h1{font-size:17px;margin:0}.hd .rt{color:#c9b8f0;font-size:12px}
+.card{max-width:900px;background:rgba(255,246,225,.05);border:1.5px solid rgba(255,232,180,.18);border-radius:16px;padding:14px 16px;margin-bottom:14px}
+.stitle{font-size:15px;font-weight:900;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.bcard{background:rgba(255,246,225,.06);border:1.5px solid rgba(255,232,180,.18);border-radius:14px;padding:14px 10px;text-align:center;position:relative}
+.ic{height:50px;display:flex;align-items:center;justify-content:center;font-size:40px}
+.ic img{width:46px;height:46px;object-fit:contain}
+.nm{font-weight:900;font-size:13px;margin-top:6px}
+.cd{color:#9f8fc7;font-size:10.5px;margin-top:3px;line-height:1.35;min-height:24px}
+.date{color:#9f8fc7;font-size:10px;margin-top:4px}
+.bcard.locked{opacity:.5;filter:grayscale(1)}
+.lock{position:absolute;top:8px;right:9px;font-size:12px;opacity:.85}
+.locked-note{background:rgba(255,255,255,.06);border:1.5px dashed rgba(255,255,255,.18);border-radius:14px;padding:10px 14px;color:#b6a9d6;font-size:11px}
+.ult{grid-column:span 4;background:linear-gradient(180deg,rgba(255,214,120,.10),rgba(255,143,177,.05));border:2px solid rgba(255,214,120,.35);border-radius:16px;padding:16px;display:flex;align-items:center;gap:16px;opacity:.62;filter:grayscale(1)}
+.ult .ic{width:64px;height:64px;font-size:0}
+.ult .ic img{width:60px;height:60px}
+.ult .nm{font-size:15px;margin:0}.ult .cd{margin-top:4px;min-height:0}
+</style></head><body>
+
+<div class="hd"><h1>徽章墙</h1><span class="rt">返回</span></div>
+
+<div class="card">
+  <div class="stitle">成长徽章</div>
+  <div class="grid">
+   <div class="bcard"><div class="ic">🔥</div><div class="nm">连续三天</div><div class="date">2026/10/31</div></div>
+   <div class="bcard"><div class="ic">💯</div><div class="nm">百题达成</div><div class="date">2026/11/4</div></div>
+   <div class="bcard"><div class="ic">🎓</div><div class="nm">初学有成</div><div class="date">2026/11/5</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="stitle">待解锁成就</div>
+  <div class="grid">
+   <div class="bcard locked"><span class="lock">🔒</span><div class="ic"><img src="../../frontend/public/badges/streak7.svg"></div><div class="nm">连续七天</div><div class="cd">连续学习 ≥7 天</div></div>
+   <div class="bcard locked"><span class="lock">🔒</span><div class="ic">🏫</div><div class="nm">学有所成</div><div class="cd">完成当前等级全部知识点</div></div>
+   <div class="bcard locked"><span class="lock">🔒</span><div class="ic"><img src="../../frontend/public/badges/perfect_set.svg"></div><div class="nm">完美一套</div><div class="cd">有一套 15 题全对</div></div>
+   <div class="bcard locked"><span class="lock">🔒</span><div class="ic">🎖️</div><div class="nm">能力初试</div><div class="cd">通过 1 次能力测试</div></div>
+  </div>
+  <div class="grid" style="margin-top:12px">
+   <div class="ult"><div class="ic"><img src="../../frontend/public/badges/ultimate.svg"></div><div><div class="nm">🔒 寰宇圆满·万物生花（最高成就）</div><div class="cd">所有产花题目都拿到过花 + 字母表已完成</div></div></div>
+  </div>
+</div>
+
+</body></html>

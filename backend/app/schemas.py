@@ -307,12 +307,22 @@ class AchievementItem(BaseModel):
     badge_id: str
     code: str
     name: str
+    icon: str = ""
     earned_at: datetime
+
+
+class BadgeDef(BaseModel):
+    code: str
+    name: str
+    icon: str = ""
+    earned: bool = False
+    condition: str = ""
 
 
 class AchievementResponse(BaseModel):
     items: list[AchievementItem]
     medals: list['MedalItem'] = []
+    badges: list[BadgeDef] = []
 
 
 class MedalItem(BaseModel):

@@ -11,8 +11,12 @@ from ..models import (
     Badge,
     DailyTask,
     KnowledgePoint,
+    LevelTest,
+    PlanetMedal,
     Progress,
     Question,
+    QuestionFlower,
+    SetProgress,
     Streak,
     User,
     WrongQuestion,
@@ -174,6 +178,138 @@ def award_badges(db: Session, user: User) -> list[str]:
         ).scalars()
     }
 
+    def all_level_completed() -> bool:
+        from .lesson import kp_completed
+
+        kps = db.execute(
+            select(KnowledgePoint).where(KnowledgePoint.level == user.level)
+        ).scalars().all()
+        if not kps:
+            return False
+        for kp in kps:
+            if kp.gate_mode == "completion":
+                if not kp_completed(db, user.id, kp):
+                    return False
+            elif str(kp.id) not in completed:
+                return False
+        return True
+
+    def perfect_set_done() -> bool:
+        return (
+            db.execute(
+                select(SetProgress.id)
+                .where(SetProgress.user_id == user.id, SetProgress.is_complete.is_(True))
+                .limit(1)
+            ).first()
+            is not None
+        )
+
+    def level_test_passed() -> bool:
+        return (
+            db.execute(
+                select(LevelTest.id)
+                .where(LevelTest.user_id == user.id, LevelTest.passed.is_(True))
+                .limit(1)
+            ).first()
+            is not None
+        )
+
+    def active_days_count() -> int:
+        return db.execute(
+            select(func.count(func.distinct(local_date_of(Attempt.created_at)))).where(
+                Attempt.user_id == user.id
+            )
+        ).scalar_one()
+
+    def today_correct_count() -> int:
+        return db.execute(
+            select(func.count())
+            .select_from(Attempt)
+            .where(
+                Attempt.user_id == user.id,
+                Attempt.is_correct.is_(True),
+                local_date_of(Attempt.created_at) == local_today(db),
+            )
+        ).scalar_one()
+
+    def max_planet_medals() -> int:
+        return (
+            db.execute(
+                select(func.max(PlanetMedal.medals)).where(PlanetMedal.user_id == user.id)
+            ).scalar_one()
+            or 0
+        )
+
+    def perfect_sets_count() -> int:
+        return db.execute(
+            select(func.count())
+            .select_from(SetProgress)
+            .where(SetProgress.user_id == user.id, SetProgress.is_complete.is_(True))
+        ).scalar_one()
+
+    def wrong_cleared_ok(threshold: int) -> bool:
+        pending = db.execute(
+            select(func.count()).select_from(WrongQuestion).where(WrongQuestion.user_id == user.id)
+        ).scalar_one()
+        wrong_hist = db.execute(
+            select(func.count())
+            .select_from(Attempt)
+            .where(Attempt.user_id == user.id, Attempt.is_correct.is_(False))
+        ).scalar_one()
+        return pending == 0 and wrong_hist >= threshold
+
+    def refill_count() -> int:
+        return db.execute(
+            select(func.count())
+            .select_from(QuestionFlower)
+            .where(QuestionFlower.user_id == user.id, QuestionFlower.source == "practice")
+        ).scalar_one()
+
+    def max_consecutive_correct() -> int:
+        rows = db.execute(
+            select(Attempt.is_correct)
+            .where(Attempt.user_id == user.id)
+            .order_by(Attempt.created_at)
+        ).scalars().all()
+        best = cur = 0
+        for ok in rows:
+            if ok:
+                cur += 1
+                best = max(best, cur)
+            else:
+                cur = 0
+        return best
+
+    def ultimate_done() -> bool:
+        from .lesson import kp_completed
+
+        total = db.execute(
+            select(func.count())
+            .select_from(Question)
+            .join(KnowledgePoint, KnowledgePoint.id == Question.knowledge_point_id)
+            .where(KnowledgePoint.produces_flowers.is_(True))
+        ).scalar_one()
+        if not total:
+            return False
+        got = db.execute(
+            select(func.count(func.distinct(QuestionFlower.question_id)))
+            .select_from(QuestionFlower)
+            .join(Question, Question.id == QuestionFlower.question_id)
+            .join(KnowledgePoint, KnowledgePoint.id == Question.knowledge_point_id)
+            .where(
+                QuestionFlower.user_id == user.id,
+                KnowledgePoint.produces_flowers.is_(True),
+            )
+        ).scalar_one()
+        if got < total:
+            return False
+        letter = db.execute(
+            select(KnowledgePoint)
+            .where(KnowledgePoint.level == "L1", KnowledgePoint.gate_mode == "completion")
+            .limit(1)
+        ).scalar_one_or_none()
+        return (letter is None) or kp_completed(db, user.id, letter)
+
     new_codes: list[str] = []
     for badge in badges:
         if str(badge.id) in earned:
@@ -185,6 +321,28 @@ def award_badges(db: Session, user: User) -> list[str]:
             ok = correct_total >= badge.condition_value
         elif badge.condition_type == "complete_kp":
             ok = bool(l1_first) and str(l1_first.id) in completed
+        elif badge.condition_type == "complete_level":
+            ok = all_level_completed()
+        elif badge.condition_type == "perfect_set":
+            ok = perfect_set_done()
+        elif badge.condition_type == "level_test_pass":
+            ok = level_test_passed()
+        elif badge.condition_type == "active_days":
+            ok = active_days_count() >= badge.condition_value
+        elif badge.condition_type == "daily_correct":
+            ok = today_correct_count() >= badge.condition_value
+        elif badge.condition_type == "planet_medals":
+            ok = max_planet_medals() >= badge.condition_value
+        elif badge.condition_type == "perfect_sets":
+            ok = perfect_sets_count() >= badge.condition_value
+        elif badge.condition_type == "wrong_cleared":
+            ok = wrong_cleared_ok(badge.condition_value)
+        elif badge.condition_type == "refill":
+            ok = refill_count() >= badge.condition_value
+        elif badge.condition_type == "consecutive_correct":
+            ok = max_consecutive_correct() >= badge.condition_value
+        elif badge.condition_type == "ultimate":
+            ok = ultimate_done()
         if ok:
             db.add(Achievement(user_id=user.id, badge_id=badge.id))
             new_codes.append(badge.code)

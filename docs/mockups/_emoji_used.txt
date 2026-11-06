@@ -1,0 +1,35 @@
+⭐	U+2B50	x23	AchievementWall.vue, ExchangeView.vue, HomeView.vue, ResultView.vue
+🌸	U+1F338	x18	ExchangeView.vue, GameHud.vue, HomeView.vue, PlanetEat.vue, PracticeView.vue, ResultView.vue
+🏅	U+1F3C5	x9	AchievementsView.vue, ExchangeView.vue, HomeView.vue, PlanetMap.vue, ResultView.vue
+✓	U+2713	x8	HomeView.vue, LetterBricks.vue, PlanetMap.vue, ResultView.vue
+🔊	U+1F50A	x5	ListeningChoice.vue, MicRead.vue, PipeCatch.vue, PronunciationGame.vue, SpeakButton.vue
+🔥	U+1F525	x4	AchievementWall.vue, GameHud.vue, HomeView.vue, StreakBadge.vue
+🌱	U+1F331	x3	WordsView.vue, WrongList.vue, WrongView.vue
+🥚	U+1F95A	x3	AchievementsView.vue, HomeView.vue, seed.py
+🐻	U+1F43B	x3	AchievementsView.vue, HomeView.vue, seed.py
+✍	U+270D	x3	AchievementsView.vue, HomeView.vue, seed.py
+🐦	U+1F426	x3	AchievementsView.vue, HomeView.vue, seed.py
+🔮	U+1F52E	x3	AchievementsView.vue, HomeView.vue, seed.py
+✅	U+2705	x3	GuestView.vue, HomeView.vue, PracticeView.vue
+🌟	U+1F31F	x3	GuestView.vue, PlayView.vue, PracticeView.vue
+🎯	U+1F3AF	x3	HomeView.vue, LevelTestView.vue
+🌍	U+1F30D	x3	SpaceBackdrop.vue, TestView.vue
+🔒	U+1F512	x3	PlanetMap.vue
+🎤	U+1F3A4	x2	MicRead.vue, PronunciationGame.vue
+📕	U+1F4D5	x2	HomeView.vue
+★	U+2605	x2	MicRead.vue, ResultView.vue
+🚀	U+1F680	x2	SpaceBackdrop.vue
+🛰	U+1F6F0	x2	SpaceBackdrop.vue
+✈	U+2708	x2	SpaceBackdrop.vue
+☄	U+2604	x2	SpaceBackdrop.vue
+💯	U+1F4AF	x1	AchievementWall.vue
+🏆	U+1F3C6	x1	StreakBadge.vue
+🧾	U+1F9FE	x1	HomeView.vue
+📖	U+1F4D6	x1	HomeView.vue
+📊	U+1F4CA	x1	HomeView.vue
+☆	U+2606	x1	ResultView.vue
+♥	U+2665	x1	GameHud.vue
+✕	U+2715	x1	GameHud.vue
+💨	U+1F4A8	x1	PipeCatch.vue
+🚪	U+1F6AA	x1	PlanetMap.vue
+🪐	U+1FA90	x1	SpaceBackdrop.vue

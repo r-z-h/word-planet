@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="sun">
+ <g stroke="#f59f00" stroke-width="4" stroke-linecap="round">
+  <line x1="54" y1="32" x2="60" y2="32"/><line x1="47.6" y1="47.6" x2="51.8" y2="51.8"/>
+  <line x1="32" y1="54" x2="32" y2="60"/><line x1="16.4" y1="47.6" x2="12.2" y2="51.8"/>
+  <line x1="10" y1="32" x2="4" y2="32"/><line x1="16.4" y1="16.4" x2="12.2" y2="12.2"/>
+  <line x1="32" y1="10" x2="32" y2="4"/><line x1="47.6" y1="16.4" x2="51.8" y2="12.2"/>
+ </g>
+ <circle cx="32" cy="32" r="18" fill="#ffd43b" stroke="#f08c00" stroke-width="2"/>
+ <circle cx="26" cy="30" r="2.4" fill="#7a4a00"/><circle cx="38" cy="30" r="2.4" fill="#7a4a00"/>
+ <path d="M25 38 q7 6 14 0" fill="none" stroke="#7a4a00" stroke-width="2.4" stroke-linecap="round"/>
+ <circle cx="22" cy="35" r="2" fill="#ff9db4" opacity=".8"/><circle cx="42" cy="35" r="2" fill="#ff9db4" opacity=".8"/>
+</svg>

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>成就徽章 · 设计方案预览</title>
+<style>
+  body{margin:0;background:radial-gradient(120% 90% at 30% 0%,#2a1550,#140b28 70%);font-family:"Microsoft YaHei",sans-serif;color:#fff1d6;padding:22px 26px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:#c9b8f0;font-size:12px;margin-bottom:16px}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  .card{background:rgba(255,246,225,.06);border:2px solid rgba(255,232,180,.18);border-radius:16px;padding:12px 8px;text-align:center;position:relative}
+  .ic{height:64px;display:flex;align-items:center;justify-content:center}
+  .ic svg{width:56px;height:56px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
+  .emo{font-size:40px;line-height:1}
+  .nm{font-weight:900;font-size:13px;margin-top:6px;color:#fff1d6}
+  .cond{font-size:10px;color:#c9b8f0;margin-top:3px;line-height:1.4}
+  .tag{position:absolute;top:8px;right:8px;font-size:9px;font-weight:900;padding:2px 6px;border-radius:99px}
+  .tag.new{background:rgba(77,171,247,.22);color:#8ed4ff;border:1px solid rgba(77,171,247,.5)}
+  .tag.old{background:rgba(255,205,76,.14);color:#ffd166;border:1px solid rgba(255,205,76,.4)}
+</style></head><body>
+<h1>成就徽章 · 设计方案（预览）</h1>
+<div class="sub">金色标签=沿用你指定保留的图标；蓝色标签=按卡通风格新绘（手绘 SVG，不占系统任何现有图标）</div>
+<div class="grid">
+
+<!-- A1 保留 -->
+<div class="card"><span class="tag old">保留</span><div class="ic"><span class="emo">🔥</span></div><div class="nm">连续三天</div><div class="cond">连续学习 ≥3 天</div></div>
+
+<!-- A2 新绘 火焰奖杯 -->
+<div class="card"><span class="tag new">新绘</span><div class="ic">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+ <path d="M32 3 C36 9 41 10 41 15 a9 9 0 1 1 -18 0 C23 10 28 9 32 3Z" fill="#ff922b" stroke="#e8590c" stroke-width="1.5"/>
+ <path d="M31 9 c2 3 4 4 4 6 a4 4 0 1 1 -8 0 c0 -2 2 -3 4 -6z" fill="#ffe066"/>
+ <path d="M18 20 h28 v7 a14 14 0 0 1 -28 0 z" fill="#ffd43b" stroke="#f08c00" stroke-width="2"/>
+ <path d="M18 22 h-6 a8 8 0 0 0 8 8" fill="none" stroke="#f08c00" stroke-width="2.5"/>
+ <path d="M46 22 h6 a8 8 0 0 1 -8 8" fill="none" stroke="#f08c00" stroke-width="2.5"/>
+ <rect x="29" y="38" width="6" height="9" fill="#f08c00"/>
+ <rect x="22" y="47" width="20" height="6" rx="2" fill="#e8590c"/>
+</svg></div><div class="nm">连续七天</div><div class="cond">连续学习 ≥7 天</div></div>
+
+<!-- A3 新绘 半月奖牌 -->
+<div class="card"><span class="tag new">新绘</span><div class="ic">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+ <defs><mask id="cres"><rect width="64" height="64" fill="black"/><circle cx="31" cy="27" r="17" fill="white"/><circle cx="41" cy="21" r="14" fill="black"/></mask></defs>
+ <circle cx="31" cy="27" r="17" fill="#ffe066" mask="url(#cres)"/>
+ <path d="M24 12 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2z" fill="#fff3bf"/>
+ <path d="M23 43 l8 6 9 -6 v11 l-9 5 -8 -5z" fill="#ff6b6b" stroke="#c92a2a" stroke-width="1.5"/>
+</svg></div><div class="nm">半月里程碑</div><div class="cond">连续学习 ≥14 天</div></div>
+
+<!-- A4 新绘 太阳公公 -->
+<div class="card"><span class="tag new">新绘</span><div class="ic">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+ <g stroke="#f59f00" stroke-width="4" stroke-linecap="round">
+  <line x1="54" y1="32" x2="60" y2="32"/><line x1="47.6" y1="47.6" x2="51.8" y2="51.8"/>
+  <line x1="32" y1="54" x2="32" y2="60"/><line x1="16.4" y1="47.6" x2="12.2" y2="51.8"/>
+  <line x1="10" y1="32" x2="4" y2="32"/><line x1="16.4" y1="16.4" x2="12.2" y2="12.2"/>
+  <line x1="32" y1="10" x2="32" y2="4"/><line x1="47.6" y1="16.4" x2="51.8" y2="12.2"/>
+ </g>
+ <circle cx="32" cy="32" r="18" fill="#ffd43b" stroke="#f08c00" stroke-width="2"/>
+ <circle cx="26" cy="30" r="2.4" fill="#7a4a00"/><circle cx="38" cy="30" r="2.4" fill="#7a4a00"/>
+ <path d="M25 38 q7 6 14 0" fill="none" stroke="#7a4a00" stroke-width="2.4" stroke-linecap="round"/>
+ <circle cx="22" cy="35" r="2" fill="#ff9db4" opacity=".8"/><circle cx="42" cy="35" r="2" fill="#ff9db4" opacity=".8"/>
+</svg></div><div class="nm">持之以恒</div><div class="cond">累计学习 30 天</div></div>
+
+<!-- B1 保留 -->
+<div class="card"><span class="tag old">保留</span><div class="ic"><span class="emo">💯</span></div><div class="nm">百题达成</div><div class="cond">累计答对 ≥100 题</div></div>
+
+<!-- B2 新绘 书本精灵 -->
+<div class="card"><span class="tag new">新绘</span><div class="ic">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+ <rect x="10" y="14" width="44" height="36" rx="5" fill="#4dabf7" stroke="#1c7ed6" stroke-width="2"/>
+ <rect x="15" y="18" width="34" height="28" rx="3" fill="#ffffff"/>
+ <line x1="32" y1="18" x2="32" y2="46" stroke="#d0ebff" stroke-width="2"/>
+ <circle cx="24" cy="30" r="2.4" fill="#1c3d5a"/><circle cx="40" cy="30" r="2.4" fill="#1c3d5a"/>
+ <path d="M25 37 q7 5 14 0" fill="none" stroke="#1c3d5a" stroke-width="2.2" stroke-linecap="round"/>
+ <circle cx="20" cy="34" r="1.8" fill="#ff9db4"/><circle cx="44" cy="34" r="1.8" fill="#ff9db4"/>
+</svg></div><div class="nm">五百题</div><div class="cond">累计答对 ≥500 题</div></div>
+
+<!-- B3 新绘 宝剑 -->
+<div class="card"><span class="tag new">新绘</span><div class="ic">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+ <polygon points="32,4 38,16 32,46 26,16" fill="#d0ebff" stroke="#4dabf7" stroke-width="1.5"/>
+ <line x1="32" y1="10" x2="32" y2="42" stroke="#74c0fc" stroke-width="1.5"/>
+ <rect x="20" y="18" width="24" height="5" rx="2" fill="#ffd43b" stroke="#f08c00" stroke-width="1.2"/>
+ <rect x="29" y="23" width="6" height="14" fill="#e8590c"/>
+ <circle cx="32" cy="40" r="3.5" fill="#ffd43b" stroke="#f08c00" stroke-width="1.2"/>
+ <path d="M48 10 l1.5 4 4 1.5 -4 1.5 -1.5 4 -1.5 -4 -4 -1.5 4 -1.5z" fill="#fff3bf"/>
+</svg></div><div class="nm">千题斩</div><div class="cond">累计答对 ≥1000 题</div></div>
+
+<!-- B4 新绘 闪电小子 -->
+<div class="card"><span class="tag new">新绘</span><div class="ic">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+ <path d="M36 4 L16 36 h11 l-4 24 L46 26 H34 Z" fill="#ffd43b" stroke="#f08c00" stroke-width="2" stroke-linejoin="round"/>
+ <circle cx="33" cy="22" r="2" fill="#7a4a00"/><circle cx="40" cy="24" r="2" fill="#7a4a00"/>
+ <path d="M34 28 q5 3 8 0" fill="none" stroke="#7a4a00" stroke-width="1.8" stroke-linecap="round"/>
+</svg></div><div class="nm">一日猛练</div><div class="cond">单日答对 ≥50 题</div></div>
+
+<!-- C1 保留 🎓 -->
+<div class="card"><span class="tag old">保留</span><div class="ic"><span class="emo">🎓</span></div><div class="nm">初学有成</div><div class="cond">完成第 1 个知识点</div></div>
+
+<!-- C2 保留 🏫 -->
+<div class="card"><span class="tag old">保留</span><div class="ic"><span class="emo">🏫</span></div><div class="nm">学有所成</div><div class="cond">完成当前等级全部知识点</div></div>
+
+<!-- C4 新绘 三颗宝珠 -->
+<div class="card"><span class="tag new">新绘</span><div class="ic">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+ <polygon points="20,16 30,24 24,36 12,28" fill="#ff9db4" stroke="#e64980" stroke-width="1.5"/>
+ <polygon points="44,16 54,28 42,36 32,24" fill="#74c0fc" stroke="#1c7ed6" stroke-width="1.5"/>
+ <polygon points="32,32 42,40 32,54 22,40" fill="#63e6be" stroke="#0ca678" stroke-width="1.5"/>
+ <path d="M32 6 l1.5 4 4 1.5 -4 1.5 -1.5 4 -1.5 -4 -4 -1.5 4 -1.5z" fill="#fff3bf"/>
+</svg></div><div class="nm">三星连珠</div><div class="cond">单个星球集齐 3 枚徽记</div></div>
+
+<!-- C5 新绘 钻石 -->
+<div class="card"><span class="tag new">新绘</span><div class="ic">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+ <polygon points="16,24 32,8 48,24 32,56" fill="#a5d8ff" stroke="#4dabf7" stroke-width="2"/>
+ <polyline points="16,24 32,30 48,24" fill="none" stroke="#4dabf7" stroke-width="1.5"/>
+ <line x1="32" y1="8" x2="32" y2="30" stroke="#4dabf7" stroke-width="1.5"/>
+ <line x1="24" y1="16" x2="28" y2="30" stroke="#4dabf7" stroke-width="1"/>
+ <line x1="40" y1="16" x2="36" y2="30" stroke="#4dabf7" stroke-width="1"/>
+ <path d="M50 10 l1.5 4 4 1.5 -4 1.5 -1.5 4 -1.5 -4 -4 -1.5 4 -1.5z" fill="#fff3bf"/>
+</svg></div><div class="nm">完美一套</div><div class="cond">有一整套 15 题全对</div></div>
+
+<!-- C6 新绘 皇冠 -->
+<div class="card"><span class="tag new">新绘</span><div class="ic">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+ <path d="M10 46 L14 18 L26 32 L32 14 L38 32 L50 18 L54 46 Z" fill="#ffd43b" stroke="#f08c00" stroke-width="2" stroke-linejoin="round"/>
+ <rect x="10" y="46" width="44" height="8" rx="3" fill="#f59f00" stroke="#e8590c" stroke-width="1.5"/>
+ <circle cx="14" cy="18" r="3" fill="#ff6b6b"/><circle cx="32" cy="14" r="3" fill="#74c0fc"/><circle cx="50" cy="18" r="3" fill="#63e6be"/>
+ <circle cx="24" cy="50" r="2" fill="#ff6b6b"/><circle cx="32" cy="50" r="2" fill="#ffd43b"/><circle cx="40" cy="50" r="2" fill="#74c0fc"/>
+</svg></div><div class="nm">全场最佳</div><div class="cond">累计 10 套全对</div></div>
+
+<!-- D1 保留 🧹 -->
+<div class="card"><span class="tag old">保留</span><div class="ic"><span class="emo">🧹</span></div><div class="nm">错题清零</div><div class="cond">错题本待练清零（历史≥5）</div></div>
+
+<!-- D2 保留 🌼 -->
+<div class="card"><span class="tag old">保留</span><div class="ic"><span class="emo">🌼</span></div><div class="nm">补花达人</div><div class="cond">错题本补花 10 次</div></div>
+
+<!-- D3 保留 🎖️ -->
+<div class="card"><span class="tag old">保留</span><div class="ic"><span class="emo">🎖️</span></div><div class="nm">能力初试</div><div class="cond">通过 1 次能力测试</div></div>
+
+<!-- D4 保留 🎇 -->
+<div class="card"><span class="tag old">保留</span><div class="ic"><span class="emo">🎇</span></div><div class="nm">连击高手</div><div class="cond">单局最高连击 ≥10</div></div>
+
+</div>
+</body></html>

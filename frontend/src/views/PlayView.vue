@@ -200,6 +200,7 @@ import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import http, { apiError } from '../api/http'
 import { useProgressStore } from '../stores/progress'
+import { showAchievementUnlock } from '../utils/achievementFx'
 import QuestionRenderer from '../components/QuestionRenderer.vue'
 import PronunciationGame from '../components/PronunciationGame.vue'
 import SpeakButton from '../components/SpeakButton.vue'
@@ -540,6 +541,11 @@ async function onSubmit(payload) {
     if (gameMode.value) {
       if (correct) sfxDing()
       else sfxBuzz()
+    }
+
+    // 成就解锁特效（首次解锁才返回 new_badges）
+    if (!reviewMode.value && Array.isArray(detail?.new_badges)) {
+      detail.new_badges.forEach((code) => showAchievementUnlock(code))
     }
 
     // 不阻塞反馈：公网隧道下单次请求约 1 秒，这里不再 await /progress（HUD 异步刷新即可）

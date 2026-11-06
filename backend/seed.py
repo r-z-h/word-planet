@@ -137,10 +137,24 @@ SPELLING_L3 = [
 ]
 
 BADGES = [
-    ("streak_3", "连续三天", "streak", 3),
-    ("streak_7", "连续七天", "streak", 7),
-    ("complete_l1_first", "初学有成", "complete_kp", 1),
-    ("answer_100", "百题达成", "answer_correct", 100),
+    ("streak_3", "连续三天", "streak", 3, "🔥"),
+    ("streak_7", "连续七天", "streak", 7, "/badges/streak7.svg"),
+    ("streak_14", "半月里程碑", "streak", 14, "/badges/streak14.svg"),
+    ("active_days_30", "持之以恒", "active_days", 30, "/badges/sun.svg"),
+    ("answer_100", "百题达成", "answer_correct", 100, "💯"),
+    ("answer_500", "五百题", "answer_correct", 500, "/badges/book.svg"),
+    ("answer_1000", "千题斩", "answer_correct", 1000, "/badges/sword.svg"),
+    ("daily_50", "一日猛练", "daily_correct", 50, "/badges/lightning.svg"),
+    ("complete_l1_first", "初学有成", "complete_kp", 1, "🎓"),
+    ("complete_level", "学有所成", "complete_level", 0, "🏫"),
+    ("medals_3_one", "三星连珠", "planet_medals", 3, "/badges/gems.svg"),
+    ("perfect_set", "完美一套", "perfect_set", 0, "/badges/perfect_set.svg"),
+    ("perfect_10", "全场最佳", "perfect_sets", 10, "/badges/crown.svg"),
+    ("level_test_pass", "能力初试", "level_test_pass", 1, "🎖️"),
+    ("wrong_cleared", "错题清零", "wrong_cleared", 5, "🧹"),
+    ("refill_10", "补花达人", "refill", 10, "🌼"),
+    ("combo_10", "连击高手", "consecutive_correct", 10, "🎇"),
+    ("ultimate_all", "寰宇圆满·万物生花", "ultimate", 0, "/badges/ultimate.svg"),
 ]
 
 KEYS = ["A", "B", "C", "D"]
@@ -234,10 +248,23 @@ def build_pronunciation_items():
 
 
 def seed_badges(db) -> None:
-    for code, name, ctype, value in BADGES:
+    for code, name, ctype, value, icon in BADGES:
         exists = db.execute(select(Badge).where(Badge.code == code)).scalar_one_or_none()
         if exists is None:
-            db.add(Badge(code=code, name=name, condition_type=ctype, condition_value=value))
+            db.add(
+                Badge(
+                    code=code,
+                    name=name,
+                    condition_type=ctype,
+                    condition_value=value,
+                    icon=icon,
+                )
+            )
+        else:
+            exists.name = name
+            exists.condition_type = ctype
+            exists.condition_value = value
+            exists.icon = icon
     db.flush()
 
 

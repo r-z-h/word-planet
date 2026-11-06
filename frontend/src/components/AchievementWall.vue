@@ -3,7 +3,7 @@
     <el-empty v-if="!items.length" description="还没有徽章，学完一个知识点试试" />
     <div v-else class="grid">
       <div v-for="item in items" :key="item.badge_id" class="badge">
-        <div style="font-size: 32px">{{ iconOf(item.code) }}</div>
+        <div class="aw-ic"><MedalIcon :icon="item.icon || '🏅'" /></div>
         <div style="font-weight: 600; margin-top: 6px">{{ item.name }}</div>
         <div class="muted">{{ formatDate(item.earned_at) }}</div>
       </div>
@@ -12,21 +12,28 @@
 </template>
 
 <script setup>
+import MedalIcon from './MedalIcon.vue'
+
 defineProps({
   items: { type: Array, default: () => [] }
 })
-
-function iconOf(code) {
-  if (code?.startsWith('streak')) return '🔥'
-  if (code === 'answer_100') return '💯'
-  return '⭐'
-}
 
 function formatDate(value) {
   if (!value) return ''
   return new Date(value).toLocaleDateString('zh-CN')
 }
 </script>
+
+<style scoped>
+.aw-ic {
+  font-size: 40px;
+  line-height: 1;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>
 
 <style scoped>
 .grid {

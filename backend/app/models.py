@@ -177,6 +177,7 @@ class Badge(Base):
     name: Mapped[str] = mapped_column(String(64), nullable=False)
     condition_type: Mapped[str] = mapped_column(String(32), nullable=False)
     condition_value: Mapped[int] = mapped_column(Integer, nullable=False)
+    icon: Mapped[str] = mapped_column(String(128), nullable=False, default="", server_default="")
 
 
 class Achievement(Base):
