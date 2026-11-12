@@ -1,25 +1,10 @@
 <template>
   <div class="wp-dark page">
     <StarField />
-    <div class="card">
+    <div class="card head-sticky">
       <div style="display: flex; justify-content: space-between; align-items: center">
         <h2 class="title" style="margin: 0">徽章墙</h2>
-        <el-button text @click="$router.push('/home')">返回</el-button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="title" style="font-size: 15px; margin-bottom: 10px">星球徽记</div>
-      <div v-if="!medals.length" class="wp2-dim" style="font-size: 12px">
-        还没有徽记。集满 5 颗星可换 1 个徽记，去星球上闯关吧。
-      </div>
-      <div v-else class="medal-grid">
-        <div v-for="m in medals" :key="m.knowledge_point_id" class="medal">
-          <div class="em"><MedalIcon :icon="m.medal_icon || '🏅'" /></div>
-          <div class="nm">{{ m.name }}</div>
-          <div class="lv wp2-dim">{{ m.level }} · {{ m.medals }} / {{ m.max_medals }}</div>
-          <div class="bar"><i :style="{ width: pct(m) + '%' }" /></div>
-        </div>
+        <el-button text class="back-fixed" @click="$router.push('/home')">返回</el-button>
       </div>
     </div>
 
@@ -42,13 +27,13 @@
       </template>
       <div v-else class="wp2-dim" style="font-size: 12px; margin-bottom: 12px">普通成就已全部解锁 🎉</div>
 
-      <div v-if="ultimate" class="ult-card" :class="{ locked: !ultimate.earned }">
+      <div v-if="ultimate" class="ult-card" :class="{ locked: !ultimate.earned }" @click="onUltimate">
         <div class="ult-ic"><MedalIcon :icon="ultimate.icon || '🏅'" /></div>
         <div class="ult-txt">
           <div class="ult-nm">{{ ultimate.earned ? '' : '🔒 ' }}{{ ultimate.name }}<span class="ult-badge">最高成就</span></div>
           <div class="ult-cd">{{ ultimate.condition }}</div>
         </div>
-        <div class="ult-state" :class="{ on: ultimate.earned }">{{ ultimate.earned ? '已解锁' : '未解锁' }}</div>
+        <div class="ult-state" :class="{ on: ultimate.earned }">{{ ultimate.earned ? '已解锁 · 点击看特效' : '未解锁' }}</div>
       </div>
     </div>
   </div>
@@ -61,9 +46,9 @@ import http, { apiError } from '../api/http'
 import AchievementWall from '../components/AchievementWall.vue'
 import StarField from '../components/StarField.vue'
 import MedalIcon from '../components/MedalIcon.vue'
+import { playUltimate } from '../utils/ultimateFx'
 
 const items = ref([])
-const medals = ref([])
 const badges = ref([])
 
 const ORDER = [
@@ -85,21 +70,14 @@ const lockedBadges = computed(() =>
 )
 const ultimate = computed(() => badges.value.find((b) => b.code === 'ultimate_all') || null)
 
-const EMOJI = { 基础问候词: '🥚', 常用单词: '🐻', 简单拼写: '✍️', 单词跟读: '🐦', 拼写进阶: '🔮' }
-
-function medalEmoji(name) {
-  return EMOJI[name] || '🏅'
-}
-function pct(m) {
-  if (!m.max_medals) return 0
-  return Math.min(100, Math.round((m.medals / m.max_medals) * 100))
+function onUltimate() {
+  if (ultimate.value?.earned) playUltimate(ultimate.value.icon || '/badges/ultimate.svg')
 }
 
 onMounted(async () => {
   try {
     const { data } = await http.get('/achievements')
     items.value = data.items
-    medals.value = data.medals || []
     badges.value = data.badges || []
   } catch (e) {
     ElMessage.error(apiError(e))

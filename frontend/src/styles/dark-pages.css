@@ -225,3 +225,36 @@
 
 /* 加载遮罩 */
 .wp-dark .el-loading-mask { background: rgba(21, 13, 48, 0.55) !important; }
+
+/* 页头返回按钮固定在页面右上角（贴着内容框右缘外侧、随框宽自适应）：卡通圆形按钮 */
+.back-fixed {
+  position: fixed !important;
+  top: 8px;
+  right: var(--back-right, 16px) !important;
+  z-index: 60;
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #ffe08a, #f4a340) !important;
+  border: 3px solid #3a2109 !important;
+  box-shadow: 0 4px 0 #3a2109, 0 8px 18px rgba(0, 0, 0, 0.4) !important;
+  color: #3a2109 !important;
+  font-size: 0 !important;
+  line-height: 1 !important;
+}
+.back-fixed::before {
+  content: "↩";
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+}
+.back-fixed:hover { transform: translateY(-1px); }
+@media (max-width: 767px) {
+  .back-fixed { width: 40px !important; height: 40px !important; min-width: 40px !important; top: 6px; }
+  .back-fixed::before { font-size: 19px; }
+}

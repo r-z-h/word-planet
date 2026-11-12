@@ -1,4 +1,5 @@
 from datetime import timedelta
+import uuid
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
@@ -19,12 +20,28 @@ def report(user: User = Depends(require_tested), db: Session = Depends(get_db)):
     completed = list(dict.fromkeys(progress.completed_knowledge_points or [])) if progress else []
 
     total_kp = 0
+    completed_in_level = 0
     if user.level:
         total_kp = db.execute(
             select(func.count()).select_from(KnowledgePoint).where(
                 KnowledgePoint.level == user.level
             )
         ).scalar_one()
+        ids = []
+        for c in completed:
+            try:
+                ids.append(uuid.UUID(str(c)))
+            except ValueError:
+                continue
+        if ids:
+            completed_in_level = db.execute(
+                select(func.count())
+                .select_from(KnowledgePoint)
+                .where(
+                    KnowledgePoint.level == user.level,
+                    KnowledgePoint.id.in_(ids),
+                )
+            ).scalar_one()
 
     today = local_today(db)
     since = today - timedelta(days=6)
@@ -68,7 +85,7 @@ def report(user: User = Depends(require_tested), db: Session = Depends(get_db)):
 
     return ReportResponse(
         level=user.level,
-        completed_knowledge_points=len(completed),
+        completed_knowledge_points=completed_in_level,
         total_knowledge_points=total_kp,
         last_7_days_completed=completed_days,
         daily_attempts=daily_attempts,

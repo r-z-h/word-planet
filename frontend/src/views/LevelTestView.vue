@@ -1,13 +1,13 @@
 <template>
   <div class="wp-dark page">
     <StarField />
-    <div class="card">
+    <div class="card head-sticky">
       <div style="display: flex; justify-content: space-between; align-items: center">
         <div>
           <h2 class="title" style="margin: 0">能力测试</h2>
           <div class="muted">测本级内容，10 题答对 8 题即可通过</div>
         </div>
-        <el-button text @click="$router.push('/home')">返回</el-button>
+        <el-button text class="back-fixed" @click="$router.push('/home')">返回</el-button>
       </div>
     </div>
 

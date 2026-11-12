@@ -1,10 +1,10 @@
 <template>
   <div class="wp-dark page">
     <StarField />
-    <div class="card">
+    <div class="card head-sticky">
       <div class="head">
         <h2 class="title" style="margin: 0">词典</h2>
-        <el-button text @click="$router.push('/home')">返回</el-button>
+        <el-button text class="back-fixed" @click="$router.push('/home')">返回</el-button>
       </div>
 
       <el-input

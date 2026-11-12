@@ -2,7 +2,7 @@
   <div class="wp-dark page">
     <StarField />
 
-    <div class="card" style="display: flex; justify-content: space-between; align-items: center">
+    <div class="card head-sticky" style="display: flex; justify-content: space-between; align-items: center">
       <div>
         <div style="font-weight: 700">再练一次</div>
         <div class="muted">
@@ -10,7 +10,7 @@
           {{ Math.max(info.total_sets - info.done_sets, 0) }} 套 · 共 {{ info.total_sets }} 套
         </div>
       </div>
-      <el-button text @click="$router.push('/home')">返回</el-button>
+      <el-button text class="back-fixed" @click="$router.push('/home')">返回</el-button>
     </div>
 
     <div v-if="loading" class="card"><el-skeleton :rows="4" animated /></div>

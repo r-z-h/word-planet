@@ -16,7 +16,15 @@
         <button class="ibtn" title="设置" @click="settingsOpen = true">设置</button>
       </div>
 
-      <el-dialog v-model="settingsOpen" class="wp2-dialog" title="设置" width="470px" align-center>
+      <el-dialog
+        v-model="settingsOpen"
+        class="wp2-dialog"
+        title="设置"
+        width="470px"
+        align-center
+        :close-on-click-modal="false"
+        :close-on-press-escape="false"
+      >
         <div class="set-body">
           <div class="set-sec">声音</div>
           <div class="set-row">
@@ -841,7 +849,8 @@ function logout() {
   padding: 9px 2px; font-size: 13px; font-weight: 700; color: var(--wp2-ink);
   border-bottom: 1px solid rgba(255, 226, 168, 0.12);
 }
-.set-body { max-height: 60vh; overflow-y: auto; padding-right: 2px; }
+.set-body { max-height: 60vh; overflow-y: auto; padding-right: 0; scrollbar-width: none; -ms-overflow-style: none; }
+.set-body::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .set-sec {
   margin: 12px 0 2px; font-size: 9.5px; letter-spacing: 0.16em;
   color: var(--wp2-dim); font-weight: 900;

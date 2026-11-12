@@ -1,10 +1,10 @@
 <template>
   <div class="wp-dark page">
     <StarField />
-    <div class="card">
+    <div class="card head-sticky">
       <div style="display: flex; justify-content: space-between; align-items: center">
         <h2 class="title" style="margin: 0">学习报告</h2>
-        <el-button text @click="$router.push('/home')">返回</el-button>
+        <el-button text class="back-fixed" @click="$router.push('/home')">返回</el-button>
       </div>
     </div>
 

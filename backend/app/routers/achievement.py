@@ -69,6 +69,7 @@ def list_achievements(user: User = Depends(require_tested), db: Session = Depend
                 code=badge.code,
                 name=badge.name,
                 icon=badge.icon or "",
+                condition=cond_text(badge),
                 earned_at=achievement.earned_at,
             )
             for achievement, badge in rows

@@ -1,12 +1,12 @@
 <template>
   <div class="wp-dark page admin-page">
     <StarField />
-    <div class="card">
+    <div class="card head-sticky">
       <div class="head">
         <h2 class="title" style="margin: 0">管理员 · 用户管理</h2>
         <div class="ops">
           <el-button @click="load" :loading="loading">刷新</el-button>
-          <el-button text @click="$router.push('/home')">返回首页</el-button>
+          <el-button text class="back-fixed" @click="$router.push('/home')">返回首页</el-button>
         </div>
       </div>
       <div class="muted" style="margin: 6px 0 10px">

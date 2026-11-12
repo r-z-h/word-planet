@@ -1,10 +1,10 @@
 <template>
   <div class="wp-dark page">
     <StarField />
-    <div class="card">
+    <div class="card head-sticky">
       <div class="head">
         <h2 class="title" style="margin: 0">隐私政策</h2>
-        <el-button text @click="$router.push('/register')">返回注册</el-button>
+        <el-button text class="back-fixed" @click="$router.push('/register')">返回注册</el-button>
       </div>
       <div class="body">
         <p>本应用面向英语单词学习，我们只收集学习必需的信息：</p>

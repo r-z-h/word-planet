@@ -277,6 +277,24 @@ class RewardSummaryOut(BaseModel):
     set_completed: bool = False
 
 
+class RewardExchangeHistoryItem(BaseModel):
+    created_at: datetime
+    set_no: int | None = None
+    from_kind: str
+    to_kind: str
+    amount: int
+
+
+class RewardExchangeHistoryOut(BaseModel):
+    knowledge_point_id: str
+    total_stars: int = 0
+    total_medals: int = 0
+    flowers_spent: int = 0
+    exchange_count: int = 0
+    last_at: datetime | None = None
+    items: list[RewardExchangeHistoryItem] = []
+
+
 class RewardExchangeRequest(BaseModel):
     knowledge_point_id: str | None = None
     set_no: int | None = None
@@ -308,6 +326,7 @@ class AchievementItem(BaseModel):
     code: str
     name: str
     icon: str = ""
+    condition: str = ""
     earned_at: datetime
 
 

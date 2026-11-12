@@ -7,12 +7,19 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import require_tested
-from ..models import KnowledgePoint, User
-from ..schemas import RewardExchangeRequest, RewardExchangeResponse, RewardSummaryOut
+from ..models import FlowerExchange, KnowledgePoint, User
+from ..schemas import (
+    RewardExchangeHistoryItem,
+    RewardExchangeHistoryOut,
+    RewardExchangeRequest,
+    RewardExchangeResponse,
+    RewardSummaryOut,
+)
 from ..services import rewards
 from ..services.lesson import current_set_no, resolve_current_kp
 
@@ -73,6 +80,76 @@ def get_summary(
 ):
     kp, no = _resolve(db, user, knowledge_point_id, set_no)
     return _summary(db, user, kp, no)
+
+
+@router.get("/exchange-history", response_model=RewardExchangeHistoryOut)
+def exchange_history(
+    knowledge_point_id: str | None = None,
+    limit: int = 50,
+    user: User = Depends(require_tested),
+    db: Session = Depends(get_db),
+):
+    """当前星球的兑换流水（汇总 + 明细，倒序）。"""
+    if knowledge_point_id:
+        try:
+            kp = db.get(KnowledgePoint, uuid.UUID(knowledge_point_id))
+        except ValueError:
+            raise HTTPException(status_code=422, detail="knowledge_point_id 非法")
+        if kp is None:
+            raise HTTPException(status_code=404, detail="知识点不存在")
+    else:
+        kp = resolve_current_kp(db, user)
+        if kp is None:
+            raise HTTPException(
+                status_code=409,
+                detail={"detail": "没有当前知识点", "code": "NO_CURRENT_KNOWLEDGE_POINT"},
+            )
+
+    def _sum(to_kind: str) -> int:
+        return db.execute(
+            select(func.coalesce(func.sum(FlowerExchange.amount), 0)).where(
+                FlowerExchange.user_id == user.id,
+                FlowerExchange.knowledge_point_id == kp.id,
+                FlowerExchange.to_kind == to_kind,
+            )
+        ).scalar_one()
+
+    total_stars = int(_sum("star"))
+    total_medals = int(_sum("medal"))
+    count = db.execute(
+        select(func.count())
+        .select_from(FlowerExchange)
+        .where(FlowerExchange.user_id == user.id, FlowerExchange.knowledge_point_id == kp.id)
+    ).scalar_one()
+    last_at = db.execute(
+        select(func.max(FlowerExchange.created_at)).where(
+            FlowerExchange.user_id == user.id, FlowerExchange.knowledge_point_id == kp.id
+        )
+    ).scalar_one()
+    rows = db.execute(
+        select(FlowerExchange)
+        .where(FlowerExchange.user_id == user.id, FlowerExchange.knowledge_point_id == kp.id)
+        .order_by(FlowerExchange.created_at.desc())
+        .limit(max(1, min(limit, 200)))
+    ).scalars().all()
+    return RewardExchangeHistoryOut(
+        knowledge_point_id=str(kp.id),
+        total_stars=total_stars,
+        total_medals=total_medals,
+        flowers_spent=total_stars * 3,
+        exchange_count=count,
+        last_at=last_at,
+        items=[
+            RewardExchangeHistoryItem(
+                created_at=r.created_at,
+                set_no=r.set_no,
+                from_kind=r.from_kind,
+                to_kind=r.to_kind,
+                amount=r.amount,
+            )
+            for r in rows
+        ],
+    )
 
 
 @router.post("/exchange", response_model=RewardExchangeResponse)

@@ -1,14 +1,14 @@
 <template>
   <div class="wp-dark page">
     <StarField />
-    <div class="card" style="display: flex; justify-content: space-between; align-items: center">
+    <div class="card head-sticky" style="display: flex; justify-content: space-between; align-items: center">
       <div>
         <div style="font-weight: 700">错题练习</div>
         <div class="muted">
           {{ kpName || '全部知识点' }} · 还剩 {{ remaining }} 题
         </div>
       </div>
-      <el-button text @click="$router.push('/wrong')">返回</el-button>
+      <el-button text class="back-fixed" @click="$router.push('/wrong')">返回</el-button>
     </div>
 
     <div v-if="loading" class="card">

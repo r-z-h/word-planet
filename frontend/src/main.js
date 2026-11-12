@@ -11,6 +11,7 @@ import './styles/theme.css'
 import './styles/dark-pages.css'
 import { initSpeech } from './utils/speech'
 import { applyMotion } from './utils/prefs'
+import { initBackPositioning } from './utils/backButton'
 
 initSpeech()
 applyMotion()
@@ -20,3 +21,4 @@ app.use(createPinia())
 app.use(router)
 app.use(ElementPlus, { locale: zhCn })
 app.mount('#app')
+initBackPositioning(router)
