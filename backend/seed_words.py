@@ -18,6 +18,18 @@ from app.models import Attempt, KnowledgePoint, Question
 
 ROOT = Path(__file__).resolve().parents[1]
 WORDS = ROOT / "data" / "build" / "words.json"
+PICQUIZ_MANIFEST = ROOT / "frontend" / "public" / "picquiz_imgs" / "manifest.json"
+
+
+def _load_picquiz_words():
+    try:
+        data = json.loads(PICQUIZ_MANIFEST.read_text(encoding="utf-8"))
+        return {it["word"].lower() for it in data}
+    except Exception:
+        return set()
+
+
+PICQUIZ_WORDS = _load_picquiz_words()
 
 SET_SIZE = 15
 FIRST_GENERATED_SET = 2
@@ -152,6 +164,9 @@ def main():
             candidates = pick_candidates(
                 data[word_level]["words"], qtype, existing_stems
             )
+            # 看图猜词的词从「基础问候词」移出：L1 word 星球不再生成这些词
+            if (kp_level, kp_order) == ("L1", 2):
+                candidates = [c for c in candidates if c["word"].lower() not in PICQUIZ_WORDS]
             rows = build_rows(kp.id, candidates, qtype, DIFFICULTY[kp_level])
             if not rows:
                 print(f"{kp.name}: 没有可生成的题")

@@ -154,7 +154,7 @@ def map_overview(user: User = Depends(require_tested), db: Session = Depends(get
     for lv in LEVELS:
         for kp in level_kps(db, lv):
             s = set_summary(db, user.id, kp)
-            pure = not kp.produces_flowers
+            pure = (not kp.produces_flowers) and kp.question_type != "picquiz"
             is_complete = False
             if pure:
                 hit = db.execute(

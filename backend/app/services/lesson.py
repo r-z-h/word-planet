@@ -136,6 +136,9 @@ def set_summary(db: Session, user_id: uuid.UUID, kp: KnowledgePoint) -> dict:
             SetProgress.is_complete.is_(True),
         )
     ).scalar_one()
+    if kp.question_type == "picquiz":
+        # 看图猜词：每套「满星(全对)」= 1 枚徽记（不依赖兑换页）
+        medals = int(mastered)
     completed = kp_completed(db, user_id, kp) if kp.gate_mode == "completion" else False
     if kp.gate_mode == "completion":
         meets = completed

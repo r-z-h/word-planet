@@ -1,0 +1,968 @@
+[
+ {
+  "cat": "people",
+  "catCn": "人物/职业",
+  "word": "student",
+  "cn": "学生",
+  "file": "people/student.svg"
+ },
+ {
+  "cat": "people",
+  "catCn": "人物/职业",
+  "word": "teacher",
+  "cn": "教师",
+  "file": "people/teacher.svg"
+ },
+ {
+  "cat": "people",
+  "catCn": "人物/职业",
+  "word": "boy",
+  "cn": "男孩",
+  "file": "people/boy.svg"
+ },
+ {
+  "cat": "people",
+  "catCn": "人物/职业",
+  "word": "girl",
+  "cn": "女孩",
+  "file": "people/girl.svg"
+ },
+ {
+  "cat": "people",
+  "catCn": "人物/职业",
+  "word": "man",
+  "cn": "男人",
+  "file": "people/man.svg"
+ },
+ {
+  "cat": "people",
+  "catCn": "人物/职业",
+  "word": "woman",
+  "cn": "女人",
+  "file": "people/woman.svg"
+ },
+ {
+  "cat": "people",
+  "catCn": "人物/职业",
+  "word": "kid",
+  "cn": "小孩",
+  "file": "people/kid.svg"
+ },
+ {
+  "cat": "people",
+  "catCn": "人物/职业",
+  "word": "family",
+  "cn": "家庭",
+  "file": "people/family.svg"
+ },
+ {
+  "cat": "people",
+  "catCn": "人物/职业",
+  "word": "baby brother",
+  "cn": "小弟弟",
+  "file": "people/baby_brother.svg"
+ },
+ {
+  "cat": "people",
+  "catCn": "人物/职业",
+  "word": "doctor",
+  "cn": "医生",
+  "file": "people/doctor.svg"
+ },
+ {
+  "cat": "people",
+  "catCn": "人物/职业",
+  "word": "nurse",
+  "cn": "护士",
+  "file": "people/nurse.png"
+ },
+ {
+  "cat": "people",
+  "catCn": "人物/职业",
+  "word": "cook",
+  "cn": "厨师",
+  "file": "people/cook.svg"
+ },
+ {
+  "cat": "people",
+  "catCn": "人物/职业",
+  "word": "driver",
+  "cn": "司机",
+  "file": "people/driver.png"
+ },
+ {
+  "cat": "people",
+  "catCn": "人物/职业",
+  "word": "farmer",
+  "cn": "农民",
+  "file": "people/farmer.svg"
+ },
+ {
+  "cat": "people",
+  "catCn": "人物/职业",
+  "word": "football player",
+  "cn": "足球运动员",
+  "file": "people/football_player.png"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "bread",
+  "cn": "面包",
+  "file": "food/bread.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "juice",
+  "cn": "果汁",
+  "file": "food/juice.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "egg",
+  "cn": "蛋",
+  "file": "food/egg.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "milk",
+  "cn": "牛奶",
+  "file": "food/milk.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "water",
+  "cn": "水",
+  "file": "food/water.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "cake",
+  "cn": "蛋糕",
+  "file": "food/cake.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "rice",
+  "cn": "米饭",
+  "file": "food/rice.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "pear",
+  "cn": "梨",
+  "file": "food/pear.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "apple",
+  "cn": "苹果",
+  "file": "food/apple.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "banana",
+  "cn": "香蕉",
+  "file": "food/banana.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "watermelon",
+  "cn": "西瓜",
+  "file": "food/watermelon.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "strawberry",
+  "cn": "草莓",
+  "file": "food/strawberry.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "grape",
+  "cn": "葡萄",
+  "file": "food/grape.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "candy",
+  "cn": "糖果",
+  "file": "food/candy.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "beef",
+  "cn": "牛肉",
+  "file": "food/beef.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "chicken",
+  "cn": "鸡肉",
+  "file": "food/chicken.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "noodles",
+  "cn": "面条",
+  "file": "food/noodles.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "soup",
+  "cn": "汤",
+  "file": "food/soup.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "tomato",
+  "cn": "西红柿",
+  "file": "food/tomato.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "potato",
+  "cn": "马铃薯",
+  "file": "food/potato.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "green beans",
+  "cn": "豆角",
+  "file": "food/green_beans.svg"
+ },
+ {
+  "cat": "food",
+  "catCn": "食物/饮料",
+  "word": "carrot",
+  "cn": "胡萝卜",
+  "file": "food/carrot.svg"
+ },
+ {
+  "cat": "body",
+  "catCn": "身体部位",
+  "word": "face",
+  "cn": "脸",
+  "file": "body/face.svg"
+ },
+ {
+  "cat": "body",
+  "catCn": "身体部位",
+  "word": "ear",
+  "cn": "耳朵",
+  "file": "body/ear.svg"
+ },
+ {
+  "cat": "body",
+  "catCn": "身体部位",
+  "word": "eye",
+  "cn": "眼睛",
+  "file": "body/eye.svg"
+ },
+ {
+  "cat": "body",
+  "catCn": "身体部位",
+  "word": "nose",
+  "cn": "鼻子",
+  "file": "body/nose.svg"
+ },
+ {
+  "cat": "body",
+  "catCn": "身体部位",
+  "word": "mouth",
+  "cn": "嘴",
+  "file": "body/mouth.svg"
+ },
+ {
+  "cat": "body",
+  "catCn": "身体部位",
+  "word": "arm",
+  "cn": "胳膊",
+  "file": "body/arm.svg"
+ },
+ {
+  "cat": "body",
+  "catCn": "身体部位",
+  "word": "hand",
+  "cn": "手",
+  "file": "body/hand.svg"
+ },
+ {
+  "cat": "body",
+  "catCn": "身体部位",
+  "word": "head",
+  "cn": "头",
+  "file": "body/head.png"
+ },
+ {
+  "cat": "body",
+  "catCn": "身体部位",
+  "word": "body",
+  "cn": "身体",
+  "file": "body/body.svg"
+ },
+ {
+  "cat": "body",
+  "catCn": "身体部位",
+  "word": "leg",
+  "cn": "腿",
+  "file": "body/leg.svg"
+ },
+ {
+  "cat": "body",
+  "catCn": "身体部位",
+  "word": "foot",
+  "cn": "脚",
+  "file": "body/foot.svg"
+ },
+ {
+  "cat": "body",
+  "catCn": "身体部位",
+  "word": "hair",
+  "cn": "头发",
+  "file": "body/hair.png"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "ruler",
+  "cn": "尺子",
+  "file": "school/ruler.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "pencil",
+  "cn": "铅笔",
+  "file": "school/pencil.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "eraser",
+  "cn": "橡皮",
+  "file": "school/eraser.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "crayon",
+  "cn": "蜡笔",
+  "file": "school/crayon.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "bag",
+  "cn": "包",
+  "file": "school/bag.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "pen",
+  "cn": "钢笔",
+  "file": "school/pen.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "pencil box",
+  "cn": "铅笔盒",
+  "file": "school/pencil_box.png"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "book",
+  "cn": "书",
+  "file": "school/book.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "notebook",
+  "cn": "笔记本",
+  "file": "school/notebook.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "schoolbag",
+  "cn": "书包",
+  "file": "school/schoolbag.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "classroom",
+  "cn": "教室",
+  "file": "school/classroom.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "blackboard",
+  "cn": "黑板",
+  "file": "school/blackboard.png"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "light",
+  "cn": "电灯",
+  "file": "school/light.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "picture",
+  "cn": "图画",
+  "file": "school/picture.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "door",
+  "cn": "门",
+  "file": "school/door.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "window",
+  "cn": "窗户",
+  "file": "school/window.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "computer",
+  "cn": "计算机",
+  "file": "school/computer.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "fan",
+  "cn": "风扇",
+  "file": "school/fan.png"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "wall",
+  "cn": "墙壁",
+  "file": "school/wall.png"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "floor",
+  "cn": "地板",
+  "file": "school/floor.png"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "tv",
+  "cn": "电视",
+  "file": "school/tv.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "chair",
+  "cn": "椅子",
+  "file": "school/chair.svg"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "desk",
+  "cn": "书桌",
+  "file": "school/desk.png"
+ },
+ {
+  "cat": "school",
+  "catCn": "文具/教室",
+  "word": "table",
+  "cn": "桌子",
+  "file": "school/table.png"
+ },
+ {
+  "cat": "places",
+  "catCn": "场所/房间",
+  "word": "library",
+  "cn": "图书馆",
+  "file": "places/library.svg"
+ },
+ {
+  "cat": "places",
+  "catCn": "场所/房间",
+  "word": "playground",
+  "cn": "操场",
+  "file": "places/playground.svg"
+ },
+ {
+  "cat": "places",
+  "catCn": "场所/房间",
+  "word": "art room",
+  "cn": "美术教室",
+  "file": "places/art_room.svg"
+ },
+ {
+  "cat": "places",
+  "catCn": "场所/房间",
+  "word": "music room",
+  "cn": "音乐教室",
+  "file": "places/music_room.svg"
+ },
+ {
+  "cat": "places",
+  "catCn": "场所/房间",
+  "word": "computer room",
+  "cn": "计算机房",
+  "file": "places/computer_room.svg"
+ },
+ {
+  "cat": "places",
+  "catCn": "场所/房间",
+  "word": "zoo",
+  "cn": "动物园",
+  "file": "places/zoo.svg"
+ },
+ {
+  "cat": "places",
+  "catCn": "场所/房间",
+  "word": "bedroom",
+  "cn": "卧室",
+  "file": "places/bedroom.svg"
+ },
+ {
+  "cat": "places",
+  "catCn": "场所/房间",
+  "word": "living room",
+  "cn": "客厅",
+  "file": "places/living_room.svg"
+ },
+ {
+  "cat": "places",
+  "catCn": "场所/房间",
+  "word": "study",
+  "cn": "书房",
+  "file": "places/study.png"
+ },
+ {
+  "cat": "places",
+  "catCn": "场所/房间",
+  "word": "kitchen",
+  "cn": "厨房",
+  "file": "places/kitchen.svg"
+ },
+ {
+  "cat": "places",
+  "catCn": "场所/房间",
+  "word": "bathroom",
+  "cn": "浴室",
+  "file": "places/bathroom.svg"
+ },
+ {
+  "cat": "places",
+  "catCn": "场所/房间",
+  "word": "garden",
+  "cn": "花园",
+  "file": "places/garden.svg"
+ },
+ {
+  "cat": "places",
+  "catCn": "场所/房间",
+  "word": "farm",
+  "cn": "农场",
+  "file": "places/farm.svg"
+ },
+ {
+  "cat": "clothes",
+  "catCn": "衣物",
+  "word": "cap",
+  "cn": "帽子",
+  "file": "clothes/cap.svg"
+ },
+ {
+  "cat": "clothes",
+  "catCn": "衣物",
+  "word": "shoe",
+  "cn": "鞋",
+  "file": "clothes/shoe.svg"
+ },
+ {
+  "cat": "clothes",
+  "catCn": "衣物",
+  "word": "glasses",
+  "cn": "眼镜",
+  "file": "clothes/glasses.svg"
+ },
+ {
+  "cat": "clothes",
+  "catCn": "衣物",
+  "word": "pants",
+  "cn": "裤子",
+  "file": "clothes/pants.svg"
+ },
+ {
+  "cat": "clothes",
+  "catCn": "衣物",
+  "word": "sock",
+  "cn": "短袜",
+  "file": "clothes/sock.svg"
+ },
+ {
+  "cat": "clothes",
+  "catCn": "衣物",
+  "word": "shorts",
+  "cn": "短裤",
+  "file": "clothes/shorts.svg"
+ },
+ {
+  "cat": "clothes",
+  "catCn": "衣物",
+  "word": "jacket",
+  "cn": "夹克衫",
+  "file": "clothes/jacket.svg"
+ },
+ {
+  "cat": "clothes",
+  "catCn": "衣物",
+  "word": "glove",
+  "cn": "手套",
+  "file": "clothes/glove.svg"
+ },
+ {
+  "cat": "clothes",
+  "catCn": "衣物",
+  "word": "scarf",
+  "cn": "围巾",
+  "file": "clothes/scarf.svg"
+ },
+ {
+  "cat": "clothes",
+  "catCn": "衣物",
+  "word": "umbrella",
+  "cn": "伞",
+  "file": "clothes/umbrella.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "spoon",
+  "cn": "匙",
+  "file": "objects/spoon.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "plate",
+  "cn": "盘子",
+  "file": "objects/plate.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "ball",
+  "cn": "球",
+  "file": "objects/ball.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "car",
+  "cn": "小汽车",
+  "file": "objects/car.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "boat",
+  "cn": "小船",
+  "file": "objects/boat.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "map",
+  "cn": "地图",
+  "file": "objects/map.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "toy",
+  "cn": "玩具",
+  "file": "objects/toy.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "box",
+  "cn": "盒",
+  "file": "objects/box.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "kite",
+  "cn": "风筝",
+  "file": "objects/kite.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "key",
+  "cn": "钥匙",
+  "file": "objects/key.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "bed",
+  "cn": "床",
+  "file": "objects/bed.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "phone",
+  "cn": "电话",
+  "file": "objects/phone.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "sofa",
+  "cn": "长沙发",
+  "file": "objects/sofa.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "fridge",
+  "cn": "冰箱",
+  "file": "objects/fridge.png"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "bowl",
+  "cn": "碗",
+  "file": "objects/bowl.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "fork",
+  "cn": "餐叉",
+  "file": "objects/fork.png"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "knife",
+  "cn": "刀",
+  "file": "objects/knife.svg"
+ },
+ {
+  "cat": "objects",
+  "catCn": "物品/玩具",
+  "word": "chopsticks",
+  "cn": "筷子",
+  "file": "objects/chopsticks.svg"
+ },
+ {
+  "cat": "weather",
+  "catCn": "天气",
+  "word": "sunny",
+  "cn": "晴",
+  "file": "weather/sunny.svg"
+ },
+ {
+  "cat": "weather",
+  "catCn": "天气",
+  "word": "windy",
+  "cn": "风",
+  "file": "weather/windy.svg"
+ },
+ {
+  "cat": "weather",
+  "catCn": "天气",
+  "word": "cloudy",
+  "cn": "多云",
+  "file": "weather/cloudy.svg"
+ },
+ {
+  "cat": "weather",
+  "catCn": "天气",
+  "word": "snowy",
+  "cn": "雪",
+  "file": "weather/snowy.svg"
+ },
+ {
+  "cat": "weather",
+  "catCn": "天气",
+  "word": "rainy",
+  "cn": "雨",
+  "file": "weather/rainy.svg"
+ },
+ {
+  "cat": "weather",
+  "catCn": "天气",
+  "word": "hot",
+  "cn": "热",
+  "file": "weather/hot.svg"
+ },
+ {
+  "cat": "weather",
+  "catCn": "天气",
+  "word": "cold",
+  "cn": "冷",
+  "file": "weather/cold.svg"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "cat",
+  "cn": "猫",
+  "file": "animals/cat.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "dog",
+  "cn": "狗",
+  "file": "animals/dog.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "pig",
+  "cn": "猪",
+  "file": "animals/pig.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "bear",
+  "cn": "熊",
+  "file": "animals/bear.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "panda",
+  "cn": "熊猫",
+  "file": "animals/panda.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "tiger",
+  "cn": "老虎",
+  "file": "animals/tiger.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "monkey",
+  "cn": "猴子",
+  "file": "animals/monkey.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "cow",
+  "cn": "牛",
+  "file": "animals/cow.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "sheep",
+  "cn": "绵羊",
+  "file": "animals/sheep.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "hen",
+  "cn": "母鸡",
+  "file": "animals/hen.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "duck",
+  "cn": "鸭子",
+  "file": "animals/duck.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "elephant",
+  "cn": "大象",
+  "file": "animals/elephant.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "horse",
+  "cn": "马",
+  "file": "animals/horse.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "giraffe",
+  "cn": "长颈鹿",
+  "file": "animals/giraffe.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "goat",
+  "cn": "山羊",
+  "file": "animals/goat.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "fish",
+  "cn": "鱼",
+  "file": "animals/fish.png"
+ },
+ {
+  "cat": "animals",
+  "catCn": "动物",
+  "word": "bird",
+  "cn": "鸟",
+  "file": "animals/bird.png"
+ }
+]

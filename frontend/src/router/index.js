@@ -10,6 +10,7 @@ const routes = [
   { path: '/privacy', component: () => import('../views/PrivacyView.vue') },
   { path: '/admin', component: () => import('../views/AdminView.vue') },
   { path: '/home', component: () => import('../views/HomeView.vue') },
+  { path: '/picquiz', component: () => import('../views/PicQuizView.vue') },
   { path: '/test', component: () => import('../views/TestView.vue') },
   { path: '/play', component: () => import('../views/PlayView.vue') },
   { path: '/modules', redirect: '/home' },
@@ -21,6 +22,7 @@ const routes = [
   { path: '/words', component: () => import('../views/WordsView.vue') },
   { path: '/wrong', component: () => import('../views/WrongView.vue') },
   { path: '/achievements', component: () => import('../views/AchievementsView.vue') },
+  { path: '/preview/ultimate', component: () => import('../views/PreviewUltimateView.vue') },
   { path: '/report', component: () => import('../views/ReportView.vue') }
 ]
 

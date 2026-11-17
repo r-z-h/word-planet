@@ -101,8 +101,9 @@
       <!-- 主体：左地图 + 右栏 -->
       <div class="homebody" v-loading="loading">
         <div class="mapwrap">
+          <button class="alphabet-entry" @click="enterAlphabet">🔤 字母表</button>
           <PlanetMap
-            :planets="map.planets"
+            :planets="mapPlanets"
             :gate-ready="map.gate_ready"
             :next-level="map.next_level"
             :max-level="map.max_level || 'L1'"
@@ -162,26 +163,38 @@
             <div class="bar"><i :style="{ width: curPct + '%' }" /></div>
             <div class="barlab"><span>{{ cur?.completed_sets || 0 }} 套已完成</span><span>{{ cur?.total_sets || 0 }} 套</span></div>
 
-            <div class="chain3">
-              <span class="layer">🌸 {{ progress.setFlowers }}<em>朵</em></span>
-              <span class="ar">→</span>
-              <span class="layer">⭐ {{ progress.setStars }}<em>颗</em></span>
-              <span class="ar">→</span>
-              <span v-if="cur && cur.gate_mode === 'completion'" class="layer hot">{{ cur.completed ? '✓ 已完成' : '未完成' }}</span>
-              <span v-else class="layer hot"><MedalIcon :icon="cur ? medalEmoji(cur) : '🏅'" /> {{ progress.setMedals }}<em>个</em></span>
-            </div>
+            <template v-if="isPicquiz">
+              <div class="chain3">
+                <span class="layer">🎯 {{ cur?.mastered_sets || 0 }}<em> 满星套</em></span>
+                <span class="ar">→</span>
+                <span class="layer hot"><MedalIcon :icon="cur ? medalEmoji(cur) : '🏅'" /> {{ cur?.medals || 0 }}<em> 徽记</em></span>
+              </div>
+              <div class="pqtip">一套全部答对 = 1 枚徽记（不产花 / 不记星）</div>
+              <button class="ebtn wide" style="margin-top: 9px" @click="router.push('/picquiz')">▶ 去玩一局</button>
+            </template>
 
-            <div class="btnrow">
-              <button class="ebtn" :disabled="progress.exchangeableStars < 1" @click="exchange('flower')">
-                🌸3 → ⭐1
-              </button>
-              <button class="ebtn" :disabled="!progress.canExchangeMedal" @click="exchange('star')">
-                ⭐5 → 徽记
-              </button>
-            </div>
+            <template v-else>
+              <div class="chain3">
+                <span class="layer">🌸 {{ progress.setFlowers }}<em>朵</em></span>
+                <span class="ar">→</span>
+                <span class="layer">⭐ {{ progress.setStars }}<em>颗</em></span>
+                <span class="ar">→</span>
+                <span v-if="cur && cur.gate_mode === 'completion'" class="layer hot">{{ cur.completed ? '✓ 已完成' : '未完成' }}</span>
+                <span v-else class="layer hot"><MedalIcon :icon="cur ? medalEmoji(cur) : '🏅'" /> {{ progress.setMedals }}<em>个</em></span>
+              </div>
 
-            <!-- 进入兑换（该星球全部套，有花没花都能进） -->
-            <button class="ebtn wide" style="margin-top: 9px" @click="openExchange">🧾 进入兑换</button>
+              <div class="btnrow">
+                <button class="ebtn" :disabled="progress.exchangeableStars < 1" @click="exchange('flower')">
+                  🌸3 → ⭐1
+                </button>
+                <button class="ebtn" :disabled="!progress.canExchangeMedal" @click="exchange('star')">
+                  ⭐5 → 徽记
+                </button>
+              </div>
+
+              <!-- 进入兑换（该星球全部套，有花没花都能进） -->
+              <button class="ebtn wide" style="margin-top: 9px" @click="openExchange">🧾 进入兑换</button>
+            </template>
           </div>
 
           <div class="card">
@@ -296,6 +309,8 @@ const MEDAL = { 基础问候词: '🥚', 常用单词: '🐻', 简单拼写: '�
 const TYPE = { letter: '字母选择题', word: '单词选择题', spelling: '拼写题', listening: '听力题', pronunciation: '跟读题' }
 
 const cur = computed(() => map.value.planets.find((p) => p.is_current && !p.locked) || null)
+const isPicquiz = computed(() => cur.value?.question_type === 'picquiz')
+const mapPlanets = computed(() => (map.value.planets || []).filter((p) => p.name !== '字母表'))
 const curPct = computed(() => {
   const c = cur.value
   if (!c || !c.total_sets) return 0
@@ -444,6 +459,20 @@ async function exchangeSet(setNo, fromKind) {
 }
 
 async function enterPlanet(planet) {
+  if (planet.name === '看图猜词') {
+    try {
+      if (planet.level !== map.value.level) {
+        await http.post('/lesson/switch-level', { level: planet.level })
+      }
+      await http.post('/lesson/select', { knowledge_point_id: planet.id })
+      await progress.fetchProgress()
+    } catch (e) {
+      ElMessage.error(apiError(e))
+      return
+    }
+    router.push('/picquiz')
+    return
+  }
   if (planet.locked) return
   try {
     if (planet.level !== map.value.level) {
@@ -458,7 +487,13 @@ async function enterPlanet(planet) {
 }
 
 function continueCurrent() {
-  if (cur.value) router.push('/play')
+  if (cur.value && cur.value.name === '看图猜词') router.push('/picquiz')
+  else if (cur.value) router.push('/play')
+}
+
+function enterAlphabet() {
+  const p = (map.value.planets || []).find((x) => x.name === '字母表')
+  if (p) enterPlanet(p)
 }
 
 function goGate() {
@@ -813,12 +848,14 @@ function logout() {
 .ex-row .mini { padding: 4px 7px; font-size: 9px; }
 .ex-tip { font-size: 10px; color: var(--wp2-dim); line-height: 1.6; margin-top: 14px; }
 
-.steps { display: flex; flex-direction: column; gap: 7px; }
-.step { display: flex; align-items: center; gap: 7px; font-size: 10.5px; color: var(--wp2-muted); font-weight: 700; }
-.step .lv { width: 20px; font-weight: 900; color: var(--wp2-ink); font-size: 10.5px; }
-.step .need { flex: 1; line-height: 1.5; }
-.step .ok { color: #6ff0c4; font-weight: 900; font-size: 10px; }
-.step .no { color: var(--wp2-dim); font-weight: 800; font-size: 10px; }
+.steps { display: flex; flex-direction: column; gap: 8px; }
+.pqtip { font-size: 11px; color: var(--wp2-dim); line-height: 1.5; margin-top: 8px; }
+.step { display: grid; grid-template-columns: 56px 1fr auto; align-items: start; gap: 8px; font-size: 11px; color: var(--wp2-muted); font-weight: 700; }
+.step .lv { white-space: nowrap; font-weight: 900; color: var(--wp2-ink); font-size: 11px; padding-top: 1px; }
+.step .need { line-height: 1.55; min-width: 0; }
+.step .need b { margin-right: 2px; }
+.step .ok { color: #6ff0c4; font-weight: 900; font-size: 10px; white-space: nowrap; padding-top: 1px; }
+.step .no { color: var(--wp2-dim); font-weight: 800; font-size: 10px; white-space: nowrap; padding-top: 1px; }
 .down { text-align: center; color: var(--wp2-dim); font-size: 9.5px; }
 
 .quick { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
@@ -886,4 +923,21 @@ function logout() {
   .cta .nums { gap: 8px; flex-wrap: wrap; }
   .cta .n b { font-size: 13px; }
 }
+.alphabet-entry {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  background: linear-gradient(180deg, #7d6bff, #5a4bd6);
+  color: #fff;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(90, 75, 214, 0.45);
+}
+.alphabet-entry:hover { filter: brightness(1.1); }
 </style>
