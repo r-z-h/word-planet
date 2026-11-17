@@ -9,7 +9,7 @@ W, H = 1280, 720
 FPS = 24
 DUR = 93.58
 N = int(DUR * FPS) + 1
-FRAMES = r"D:\CodeProjects\Word Planet\docs\cg_build\frames"
+FRAMES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frames")
 os.makedirs(FRAMES, exist_ok=True)
 
 SCENES = [

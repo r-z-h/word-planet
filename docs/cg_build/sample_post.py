@@ -4,8 +4,9 @@ import os
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-SRC = r"D:\CodeProjects\Word Planet\docs\cg_build\ref_frames"
-OUT = r"D:\CodeProjects\Word Planet\docs\cg_build\ref_out"
+_HERE = os.path.dirname(os.path.abspath(__file__))
+SRC = os.path.join(_HERE, "ref_frames")
+OUT = os.path.join(_HERE, "ref_out")
 os.makedirs(OUT, exist_ok=True)
 W, H = 1280, 720
 N = len([f for f in os.listdir(SRC) if f.lower().endswith(".jpg")])

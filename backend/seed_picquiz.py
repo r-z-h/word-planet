@@ -5,13 +5,15 @@
 """
 import json
 from collections import defaultdict
+from pathlib import Path
 
 from sqlalchemy import select
 
 from app.database import SessionLocal
 from app.models import KnowledgePoint, Question
 
-MANIFEST = r"D:\CodeProjects\Word Planet\frontend\public\picquiz_imgs\manifest.json"
+ROOT = Path(__file__).resolve().parents[1]
+MANIFEST = ROOT / "frontend" / "public" / "picquiz_imgs" / "manifest.json"
 ORDER = ["people", "animals", "food", "body", "school", "places", "clothes", "objects", "weather"]
 KEYS = "ABCD"
 

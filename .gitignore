@@ -67,3 +67,6 @@ data/logs/
 *.mov
 *.webm
 
+# --- 编辑器（Obsidian 工作区状态含本机路径，不入库）---
+**/.obsidian/
+
