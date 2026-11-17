@@ -55,3 +55,15 @@ tools/make_resume_docx.py
 
 # 本地调试产物
 backend/debug/
+
+# --- 本地 embedding 模型与生成索引（体积大/可重建，不入库）---
+data/models/
+data/faq/index.json
+rag_kb/index.json
+data/logs/
+
+# --- 大体积演示媒体（视频等，放 Release/CDN，不入库）---
+*.mp4
+*.mov
+*.webm
+
