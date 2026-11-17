@@ -29,6 +29,8 @@ def _disable_public_security(monkeypatch):
 
     monkeypatch.setattr(settings, 'require_captcha', False)
     monkeypatch.setattr(settings, 'rate_limit_per_min', 0)
+    # 测试默认关闭外部 LLM 调用（避免真连 DeepSeek、产生费用/抖动）；个别用例会自行打开
+    monkeypatch.setattr(settings, 'help_llm_enabled', False)
 
 
 @pytest.fixture(scope="session", autouse=True)

@@ -42,6 +42,25 @@
       </el-table>
     </div>
 
+    <div class="card" style="margin-top: 16px">
+      <div class="head">
+        <h2 class="title" style="margin: 0">知识库 · 未命中问题</h2>
+        <div class="ops">
+          <el-button @click="loadUnmatched" :loading="unmatchedLoading">刷新</el-button>
+        </div>
+      </div>
+      <div class="muted" style="margin: 6px 0 10px">
+        共 {{ unmatchedTotal }} 条未命中记录（按问题去重后 {{ unmatchedItems.length }} 个）。用于指导补充知识库。
+      </div>
+      <el-table :data="unmatchedItems" size="small" style="width: 100%">
+        <el-table-column prop="question" label="用户问过但没答上的问题" min-width="420" />
+        <el-table-column prop="count" label="次数" width="90" />
+      </el-table>
+      <div v-if="!unmatchedItems.length" class="muted" style="padding: 12px 0">
+        暂无未命中记录（说明目前的问题都能被规则层或知识库覆盖）。
+      </div>
+    </div>
+
     <el-dialog v-model="resetOpen" class="wp2-dialog" title="重置密码" width="380px">
       <p class="wp2-muted">账号：{{ resetTarget?.account }}</p>
       <el-input v-model="newPassword" type="password" show-password placeholder="新密码（至少 6 位）" />
@@ -66,8 +85,14 @@ const loading = ref(false)
 const resetOpen = ref(false)
 const resetTarget = ref(null)
 const newPassword = ref('')
+const unmatchedItems = ref([])
+const unmatchedTotal = ref(0)
+const unmatchedLoading = ref(false)
 
-onMounted(load)
+onMounted(() => {
+  load()
+  loadUnmatched()
+})
 
 async function load() {
   loading.value = true
@@ -83,6 +108,19 @@ async function load() {
     }
   } finally {
     loading.value = false
+  }
+}
+
+async function loadUnmatched() {
+  unmatchedLoading.value = true
+  try {
+    const { data } = await http.get('/help/unmatched', { params: { limit: 100 } })
+    unmatchedItems.value = data.items || []
+    unmatchedTotal.value = data.total || 0
+  } catch (e) {
+    if (e?.response?.status !== 403) ElMessage.error(apiError(e))
+  } finally {
+    unmatchedLoading.value = false
   }
 }
 

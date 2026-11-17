@@ -555,3 +555,23 @@ class PronunciationScoreResponse(BaseModel):
     recognized: str = ""
     source: str = "mock"
     error: str | None = None
+
+
+# ---------------------------------------------------------------- 系统问答助手（Phase A）
+
+class HelpAskRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=500)
+    context: dict | None = None
+
+
+class HelpSource(BaseModel):
+    title: str
+    path: str
+
+
+class HelpAnswer(BaseModel):
+    answer: str
+    mode: Literal["rule", "faq", "refuse"] = "rule"
+    sources: list[HelpSource] = Field(default_factory=list)
+    context: dict = Field(default_factory=dict)
+    suggestions: list[str] = Field(default_factory=list)

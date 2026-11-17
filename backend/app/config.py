@@ -26,6 +26,18 @@ class Settings(BaseSettings):
     iflytek_api_secret: str = ""
     iflytek_enabled: bool = False
 
+    # 系统问答 · Phase B 检索版（零 LLM）
+    faq_min_score: float = 0.60      # bge 余弦阈值：真命中≥0.68，无关问题≤0.43，取 0.60
+    help_llm_enabled: bool = False   # Phase B Step 3：是否启用 LLM 生成（默认关）
+
+    # AI 问答 · 外部 LLM（DeepSeek，OpenAI 兼容接口）
+    llm_api_key: str = ""
+    llm_base_url: str = "https://api.deepseek.com"
+    llm_model: str = "deepseek-flash"
+    llm_timeout: float = 10.0        # 单次生成最长等待（秒），超时退回原文
+    llm_max_tokens: int = 300        # 回答很短即可，限制生成长度防长思考卡顿
+    llm_reasoning_effort: str = "low"  # deepseek-flash 支持 low/high/max；low 减少长思考
+
 
     cors_origins: str = "http://localhost:5273,https://localhost:5273"
 

@@ -23,6 +23,8 @@ from .routers import (
     words,
     wrong,
     guest,
+    help,
+    picquiz,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -54,6 +56,14 @@ async def lifespan(_app: FastAPI):
         _start_scheduler()
     else:
         logger.info("APScheduler disabled (ENABLE_SCHEDULER=0)")
+    # 预热本地 embedding 模型 + 知识库索引，避免用户第一问卡 8–10 秒（失败不影响启动）
+    try:
+        import rag_engine
+
+        rag_engine.warmup()
+        logger.info("help KB engine warmed up")
+    except Exception:
+        logger.exception("help KB warmup failed (ignored)")
     yield
     if settings.enable_scheduler:
         _stop_scheduler()
@@ -87,6 +97,8 @@ for router in (
     account.router,
     admin.router,
     guest.router,
+    help.router,
+    picquiz.router,
 ):
     app.include_router(router)
 
