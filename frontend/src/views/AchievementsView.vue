@@ -4,7 +4,10 @@
     <div class="card head-sticky">
       <div style="display: flex; justify-content: space-between; align-items: center">
         <h2 class="title" style="margin: 0">徽章墙</h2>
-        <el-button text class="back-fixed" @click="$router.push('/home')">返回</el-button>
+        <div style="display: flex; align-items: center; gap: 6px">
+          <el-button text @click="$router.push('/preview/ultimate')">调试预览</el-button>
+          <el-button text class="back-fixed" @click="$router.push('/home')">返回</el-button>
+        </div>
       </div>
     </div>
 
@@ -46,7 +49,7 @@ import http, { apiError } from '../api/http'
 import AchievementWall from '../components/AchievementWall.vue'
 import StarField from '../components/StarField.vue'
 import MedalIcon from '../components/MedalIcon.vue'
-import { playUltimate } from '../utils/ultimateFx'
+import { playUltimateSequence } from '../utils/ultimateSequence'
 
 const items = ref([])
 const badges = ref([])
@@ -71,7 +74,9 @@ const lockedBadges = computed(() =>
 const ultimate = computed(() => badges.value.find((b) => b.code === 'ultimate_all') || null)
 
 function onUltimate() {
-  if (ultimate.value?.earned) playUltimate(ultimate.value.icon || '/badges/ultimate.svg')
+  if (ultimate.value?.earned) {
+    playUltimateSequence('/videos/ultimate_journey.mp4', ultimate.value.icon || '/badges/ultimate.svg')
+  }
 }
 
 onMounted(async () => {

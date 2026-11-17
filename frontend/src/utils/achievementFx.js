@@ -1,5 +1,5 @@
 // 成就解锁动效（简约版）：右下角滑入"成就解锁卡" + 徽章弹跳 + 金光 + 星光
-import { playUltimate } from './ultimateFx'
+import { playUltimateSequence } from './ultimateSequence'
 const META = {
   complete_l1_first: { name: '初学有成', icon: '🎓' },
   streak_3: { name: '连续三天', icon: '🔥' },
@@ -83,7 +83,7 @@ export function showAchievementUnlock(code, desc = '') {
   const meta = META[code]
   if (!meta) return
   if (code === 'ultimate_all') {
-    playUltimate(meta.icon || '/badges/ultimate.svg')
+    playUltimateSequence('/videos/ultimate_journey.mp4', meta.icon || '/badges/ultimate.svg')
     return
   }
   queue.push({ ...meta, desc })

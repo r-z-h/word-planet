@@ -21,12 +21,14 @@
 
 <script setup>
 import MedalIcon from './MedalIcon.vue'
-import { playUltimate } from '../utils/ultimateFx'
+import { playUltimateSequence } from '../utils/ultimateSequence'
 
 const touch = typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(hover: none)').matches
 
 function onBadgeClick(item) {
-  if (item && item.code === 'ultimate_all') playUltimate(item.icon || '/badges/ultimate.svg')
+  if (item && item.code === 'ultimate_all') {
+    playUltimateSequence('/videos/ultimate_journey.mp4', item.icon || '/badges/ultimate.svg')
+  }
 }
 
 defineProps({
