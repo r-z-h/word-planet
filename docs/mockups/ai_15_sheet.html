@@ -1,0 +1,11 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+body{margin:0;background:#eef1f7;font-family:"Microsoft YaHei",sans-serif;color:#2a2f3a}
+.wrap{width:1500px;padding:20px 26px} h1{font-size:18px;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.card{background:#fff;border-radius:12px;padding:8px;display:flex;flex-direction:column;align-items:center;box-shadow:0 3px 10px rgba(40,60,110,.07)}
+img{width:180px;height:180px;object-fit:contain} .en{font-size:13px;font-weight:800;margin-top:2px}
+</style></head><body><div class="wrap"><h1>AI 补图（15，去水印后）</h1><div class="grid" id="g"></div></div>
+<script>
+const items=[["people/football_player","football player"],["people/driver","driver"],["people/nurse","nurse"],["body/head","head"],["body/hair","hair"],["school/pencil_box","pencil box"],["school/blackboard","blackboard"],["school/fan","fan"],["school/wall","wall"],["school/desk","desk"],["school/table","table"],["school/floor","floor"],["objects/fridge","fridge"],["objects/fork","fork"],["places/study","study"]];
+document.getElementById('g').innerHTML=items.map(([p,n])=>`<div class="card"><img src="../../frontend/public/picquiz_imgs/${p}.png"/><div class="en">${n}</div></div>`).join('');
+</script></body></html>

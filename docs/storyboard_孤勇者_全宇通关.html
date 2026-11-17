@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>孤勇者 · 全宇通关 分镜故事板</title>
+<style>
+@page { size: A4 landscape; margin: 10mm; }
+*{box-sizing:border-box}
+body{margin:0;background:#120a24;color:#fff1d6;font-family:"Microsoft YaHei",sans-serif}
+.cover{padding:24px 30px 10px}
+h1{margin:0 0 6px;font-size:24px;color:#ffd166}
+.meta{font-size:12px;color:#c9b8f0;line-height:1.7}
+.chars{display:flex;gap:14px;margin-top:12px;flex-wrap:wrap}
+.chip{background:rgba(255,246,225,.07);border:1.5px solid rgba(255,232,180,.25);border-radius:10px;padding:8px 12px;font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px 24px 24px}
+.panel{background:#1c1236;border:1.5px solid rgba(255,232,180,.22);border-radius:12px;overflow:hidden;break-inside:avoid}
+.scene{position:relative;height:112px;display:grid;place-items:center;overflow:hidden}
+.scene .motif{font-size:46px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.45))}
+.scene .kid{position:absolute;left:12px;bottom:8px;font-size:26px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+.scene .star{position:absolute;width:3px;height:3px;background:#fff;border-radius:50%;opacity:.7}
+.time{position:absolute;top:6px;left:8px;background:rgba(0,0,0,.45);color:#ffd166;font-size:9.5px;font-weight:900;padding:2px 7px;border-radius:99px}
+.cap{padding:8px 10px 10px}
+.cap .no{font-size:10px;color:#ffd166;font-weight:900}
+.cap .nm{font-size:12px;font-weight:900;margin-top:2px}
+.cap .tx{font-size:9.5px;color:#a99cc9;margin-top:3px;line-height:1.35}
+.cap .sb{font-size:9.5px;color:#ffe8b0;margin-top:3px}
+.footer{padding:0 30px 18px;font-size:10px;color:#8f81b0}
+</style></head><body>
+<div class="cover">
+ <h1>《孤勇者》× 单词星球 · 全宇通关 CG 分镜故事板</h1>
+ <div class="meta">音频 93.58s · BPM≈129（每拍0.464s） · 16 镜头 · 16:9 横屏 · 3D 卡通/皮克斯质感<br>
+ 强重音锚点：3.23 / 7.38 / 11.31 / 25.69 / 30.20 / 37.10 / 40.02 / 47.37 / 51.44 / 55.53 / 59.01 / 70.02 / 77.86 / 80.62 / 85.24 / 87.54 / 89.35 s</div>
+ <div class="chars">
+  <div class="chip">🧑‍🚀 <b>小星</b>：8岁，橙色宇航服+白条，红披风，星形能量灯</div>
+  <div class="chip">🤖 <b>阿豆</b>：单眼圆球机器人，会发光、卖萌</div>
+  <div class="chip">🚀 <b>豆荚号</b>：橙色尾焰飞船，可变滑板/机甲</div>
+  <div class="chip">👑 终点：皇冠星台（金色光柱+王座）</div>
+ </div>
+</div>
+<div class="grid" id="grid"></div>
+<div class="footer">说明：分镜中的画面为示意排版，用于确认镜头/卡点/字幕；正式美术需按每格描述绘制 3D 关键帧。生成提示（英文）见脚本 md 第五节。</div>
+<script>
+const shots=[
+ {t:"0.00–3.23",n:"镜头1 · 星空标题",d:"黑场星空，星尘汇聚成标题「单词星球」",s:"在宇宙尽头，有一颗单词星球…",m:"✨",c1:"#1a1033",c2:"#0a0518"},
+ {t:"3.23–7.38",n:"镜头2 · 小星登场",d:"舱门打开，小星漂浮出现，阿豆探头",s:"我是小星，今天要通关整颗星球！",m:"🧑‍🚀",c1:"#2a1a4d",c2:"#120a24"},
+ {t:"7.38–11.31",n:"镜头3 · 出发",d:"豆荚号弹射，尾焰橙光，远处七颗危险星球",s:"七种危险，一颗皇冠。出发！",m:"🚀",c1:"#2b1b3f",c2:"#0e0620"},
+ {t:"11.31–18.50",n:"危险1 · 字母陨石雨",d:"巨大 A/B/C 字母化作陨石砸下，激光串桥",s:"第一关 · 字母陨石雨",m:"🅰️",c1:"#123a5a",c2:"#0a1626"},
+ {t:"18.50–25.69",n:"危险2 · 失重问候海",d:"粉色 Hello/Hi 气泡漂浮，踩气泡弹跳",s:"第二关 · 失重问候海",m:"🫧",c1:"#5a1a44",c2:"#200a1c"},
+ {t:"25.69–30.20",n:"危险3 · 单词迷宫",d:"绿色单词高墙旋转成迷阵，滑板穿行",s:"第三关 · 单词迷宫",m:"🧩",c1:"#14503a",c2:"#081e18"},
+ {t:"30.20–37.10",n:"危险4 · 拼图断层",d:"橙黄拼图断桥，抛字母积木补缺口",s:"第四关 · 拼图断层",m:"🧩",c1:"#5a3a10",c2:"#211505"},
+ {t:"37.10–47.37",n:"危险5 · 声波风暴",d:"紫色声波环与音符狂风，踩拍前进",s:"第五关 · 声波风暴",m:"🎵",c1:"#3a1a5a",c2:"#160a26"},
+ {t:"47.37–55.53",n:"危险6 · 静音黑洞",d:"深蓝黑洞吞光，仪表熄灭，画面抽色",s:"第六关 · 静音黑洞",m:"⚫",c1:"#0d1430",c2:"#05070f"},
+ {t:"55.53–59.01",n:"黑洞内部 · 静默",d:"全黑，只剩心跳光点与阿豆微光",s:"看不见的时候，用心听。",m:"💗",c1:"#0a0a16",c2:"#000000"},
+ {t:"59.01–70.02",n:"危险7 · 镜像星云",d:"粉青镜面星云，无数倒影同步，击碎镜面",s:"第七关 · 镜像星云",m:"🪞",c1:"#2a4a5a",c2:"#0c1820"},
+ {t:"70.02–76.47",n:"冲向皇冠星台",d:"金色光柱、星光阶梯，小星全速飞向王座",s:"终点，就在前面！",m:"👑",c1:"#5a4a10",c2:"#221a05"},
+ {t:"76.47–77.86",n:"皇冠升起",d:"金色皇冠从光柱中缓缓升起，眼中映金光",s:"（留白给音乐）",m:"👑",c1:"#6a5410",c2:"#2a1e05"},
+ {t:"77.86–85.24",n:"戴冠瞬间",d:"踏上星台，皇冠落下；85.24s 金光冲击波",s:"全宇通关！",m:"👑",c1:"#7a5f12",c2:"#2e2106"},
+ {t:"85.24–89.35",n:"胜利 · 万物生花",d:"戴冠站立，七星球连成星环，烟花彩带花瓣",s:"寰宇圆满 · 万物生花",m:"🎆",c1:"#4a2a5a",c2:"#180a24"},
+ {t:"89.35–93.58",n:"定格 · LOGO",d:"海报定格，小星敬礼眨眼，LOGO 发光淡出",s:"单词星球 · 全宇通关",m:"🌌",c1:"#1a1033",c2:"#08040f"}
+];
+const grid=document.getElementById('grid');
+shots.forEach((s,i)=>{
+  const stars=Array.from({length:14},()=>`<span class="star" style="left:${Math.random()*100}%;top:${Math.random()*100}%"></span>`).join('');
+  const el=document.createElement('div');el.className='panel';
+  el.innerHTML=`<div class="scene" style="background:radial-gradient(circle at 50% 40%,${s.c1},${s.c2})">
+    ${stars}<span class="time">${s.t}</span><span class="kid">🧑‍🚀</span><span class="motif">${s.m}</span></div>
+    <div class="cap"><div class="no">${s.n}</div><div class="nm">${s.d}</div><div class="sb">字幕：${s.s}</div></div>`;
+  grid.appendChild(el);
+});
+</script>
+</body></html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><style>
+body{margin:0;background:radial-gradient(120% 90% at 30% 0%,#2a1550,#140b28 70%);font-family:"Microsoft YaHei",sans-serif;color:#fff1d6;padding:22px 26px}
+h1{font-size:18px;margin:0 0 4px}.sub{color:#c9b8f0;font-size:12px;margin-bottom:18px}
+.row{display:flex;align-items:flex-start;margin-bottom:22px}
+.lab{width:130px;flex:none;font-weight:900;color:#ffd166;font-size:14px;padding-top:34px}
+.wrap{flex:1;display:flex;align-items:flex-start}
+.card{flex:1;height:96px;background:rgba(255,246,225,.06);border:1.5px solid rgba(255,232,180,.22);border-radius:14px;position:relative}
+.card .t{position:absolute;left:14px;top:14px;font-size:12px;color:#c9b8f0}
+.edge{position:relative;top:10px;margin-left:18px;flex:none}
+/* A 圆形 */
+.btnA{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:22px;font-weight:900;color:#3a2109;background:linear-gradient(180deg,#ffe08a,#f4a340);border:3px solid #3a2109;box-shadow:0 4px 0 #3a2109,0 8px 18px rgba(0,0,0,.4)}
+/* B 胶囊 */
+.btnB{display:flex;align-items:center;gap:6px;padding:9px 15px;border-radius:999px;font-size:14px;font-weight:900;color:#3a2109;background:linear-gradient(180deg,#ffe08a,#f4a340);border:3px solid #3a2109;box-shadow:0 4px 0 #3a2109,0 8px 18px rgba(0,0,0,.4);white-space:nowrap}
+/* C 小怪兽 */
+.btnC{width:52px;height:52px;position:relative}
+/* D 星星 */
+.btnD{width:52px;height:52px;position:relative}
+</style></head><body>
+<h1>「返回」按钮 · 卡通造型候选</h1>
+<div class="sub">按钮放在内容框右边缘外侧约 18px；页面框变宽/变窄时会跟着内移/外移（这里用一条内容框示意位置）</div>
+
+<div class="row"><div class="lab">A · 圆形图标</div><div class="wrap">
+  <div class="card"><span class="t">页面内容框（宽度随页面变化）</span></div>
+  <div class="edge"><div class="btnA">↩</div></div>
+</div></div>
+
+<div class="row"><div class="lab">B · 圆角胶囊</div><div class="wrap">
+  <div class="card"><span class="t">页面内容框（宽度随页面变化）</span></div>
+  <div class="edge"><div class="btnB"><span>←</span> 返回</div></div>
+</div></div>
+
+<div class="row"><div class="lab">C · 卡通小怪兽</div><div class="wrap">
+  <div class="card"><span class="t">页面内容框（宽度随页面变化）</span></div>
+  <div class="edge">
+    <svg class="btnC" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="mg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b197fc"/><stop offset="1" stop-color="#7048e8"/></linearGradient></defs>
+      <path d="M10 56 Q4 20 32 10 Q60 20 54 56 Z" fill="url(#mg)" stroke="#3a2109" stroke-width="3"/>
+      <circle cx="24" cy="32" r="4" fill="#2b1b12"/><circle cx="40" cy="32" r="4" fill="#2b1b12"/>
+      <path d="M23 42 q9 8 18 0" fill="none" stroke="#2b1b12" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="17" cy="39" r="3" fill="#ff9db4" opacity=".8"/><circle cx="47" cy="39" r="3" fill="#ff9db4" opacity=".8"/>
+      <path d="M32 62 l-7 -8 h14 z" fill="#ffd166" stroke="#3a2109" stroke-width="2"/>
+    </svg>
+  </div>
+</div></div>
+
+<div class="row"><div class="lab">D · 星星徽章</div><div class="wrap">
+  <div class="card"><span class="t">页面内容框（宽度随页面变化）</span></div>
+  <div class="edge">
+    <svg class="btnD" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <path d="M32 4 L40 24 L62 24 L44 38 L51 60 L32 46 L13 60 L20 38 L2 24 L24 24 Z" fill="#ffd43b" stroke="#3a2109" stroke-width="3" stroke-linejoin="round"/>
+      <text x="32" y="40" font-size="20" font-weight="900" text-anchor="middle" fill="#3a2109">↩</text>
+    </svg>
+  </div>
+</div></div>
+
+</body></html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><style>
+body{margin:0;background:radial-gradient(120% 90% at 30% 0%,#2a1550,#140b28 70%);font-family:"Microsoft YaHei",sans-serif;color:#fff1d6;padding:22px 26px}
+h1{font-size:18px;margin:0 0 4px}.sub{color:#c9b8f0;font-size:12px;margin-bottom:18px}
+.row{display:flex;align-items:flex-start;margin-bottom:20px}
+.lab{width:150px;flex:none;font-weight:900;color:#ffd166;font-size:14px;padding-top:28px}
+.wrap{flex:1;display:flex;align-items:flex-start}
+.card{flex:1;height:92px;background:rgba(255,246,225,.06);border:1.5px solid rgba(255,232,180,.22);border-radius:14px;position:relative}
+.card .t{position:absolute;left:14px;top:14px;font-size:12px;color:#c9b8f0}
+.edge{position:relative;top:8px;margin-left:18px;flex:none;display:flex;align-items:center}
+.badge{display:flex;align-items:center;gap:8px}
+</style></head><body>
+<h1>「返回」按钮 · 小怪兽改良版</h1>
+<div class="sub">都保留小怪兽，但加入明确“← / 返回”标识；位置在内容框右边缘外侧约 18px，随框宽自适应</div>
+
+<!-- C1 举牌 -->
+<div class="row"><div class="lab">C1 · 小怪兽举牌</div><div class="wrap">
+ <div class="card"><span class="t">页面内容框</span></div>
+ <div class="edge"><div class="badge">
+  <svg width="54" height="54" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+   <defs><linearGradient id="m1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b197fc"/><stop offset="1" stop-color="#7048e8"/></linearGradient></defs>
+   <path d="M8 58 Q2 24 32 12 Q62 24 56 58 Z" fill="url(#m1)" stroke="#3a2109" stroke-width="3"/>
+   <circle cx="24" cy="34" r="4" fill="#2b1b12"/><circle cx="40" cy="34" r="4" fill="#2b1b12"/>
+   <path d="M23 44 q9 7 18 0" fill="none" stroke="#2b1b12" stroke-width="3" stroke-linecap="round"/>
+  </svg>
+  <div style="background:linear-gradient(180deg,#ffe08a,#f4a340);border:3px solid #3a2109;border-radius:8px;padding:5px 9px;font-weight:900;color:#3a2109;font-size:13px;box-shadow:0 3px 0 #3a2109;white-space:nowrap">← 返回</div>
+ </div></div>
+</div></div>
+
+<!-- C2 箭头肚 -->
+<div class="row"><div class="lab">C2 · 肚皮大箭头</div><div class="wrap">
+ <div class="card"><span class="t">页面内容框</span></div>
+ <div class="edge"><div class="badge">
+  <svg width="58" height="58" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+   <defs><linearGradient id="m2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b197fc"/><stop offset="1" stop-color="#7048e8"/></linearGradient></defs>
+   <path d="M8 58 Q2 24 32 12 Q62 24 56 58 Z" fill="url(#m2)" stroke="#3a2109" stroke-width="3"/>
+   <circle cx="24" cy="30" r="3.4" fill="#2b1b12"/><circle cx="40" cy="30" r="3.4" fill="#2b1b12"/>
+   <path d="M32 40 l-9 7 9 7" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+   <line x1="23" y1="47" x2="43" y2="47" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+  </svg>
+ </div></div>
+</div></div>
+
+<!-- C3 气泡 -->
+<div class="row"><div class="lab">C3 · 气泡“返回”</div><div class="wrap">
+ <div class="card"><span class="t">页面内容框</span></div>
+ <div class="edge"><div class="badge" style="align-items:flex-start">
+  <div style="position:relative">
+   <svg width="54" height="54" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="m3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b197fc"/><stop offset="1" stop-color="#7048e8"/></linearGradient></defs>
+    <path d="M8 58 Q2 24 32 12 Q62 24 56 58 Z" fill="url(#m3)" stroke="#3a2109" stroke-width="3"/>
+    <circle cx="24" cy="34" r="4" fill="#2b1b12"/><circle cx="40" cy="34" r="4" fill="#2b1b12"/>
+    <path d="M23 44 q9 7 18 0" fill="none" stroke="#2b1b12" stroke-width="3" stroke-linecap="round"/>
+   </svg>
+   <div style="position:absolute;left:50px;top:0;background:#fff3bf;color:#3a2109;border:3px solid #3a2109;border-radius:10px;padding:3px 8px;font-weight:900;font-size:12px;white-space:nowrap">← 返回</div>
+  </div>
+ </div></div>
+</div></div>
+
+</body></html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>星球地图 · 背景+排布预览 v2（独立，不影响系统）</title>
+<style>
+  html,body{margin:0;background:#050510;font-family:"Microsoft YaHei",sans-serif;}
+  .map{position:relative;width:1600px;height:900px;overflow:hidden;
+    background:url('star_bg2.png') center/cover no-repeat;
+    color:#eef;
+    --ink:#0f0822; --gold:#ffd76e; --dim:#d3cde6;
+    --l1:#4bd6a8; --l1b:#a9f5d8; --l2:#5b8cff; --l2b:#a9c4ff; --l3:#b48bff; --l3b:#dcc8ff;}
+  .tint{position:absolute;inset:0;
+    background:radial-gradient(64% 56% at 50% 48%, rgba(4,4,12,.24), rgba(4,4,12,.03) 74%);
+    z-index:1;}
+  .routes{position:absolute;inset:0;width:100%;height:100%;z-index:1;}
+  .routes path{fill:none;stroke-linecap:round;stroke-dasharray:7 11;opacity:.5;}
+
+  .planet{position:absolute;width:168px;margin-left:-84px;transform:translateY(-40px);z-index:3;
+    display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .disc{width:84px;height:84px;border-radius:50%;position:relative;display:grid;place-items:center;
+    box-shadow:0 6px 16px rgba(0,0,0,.5),0 0 24px rgba(120,150,255,.3);}
+  .disc::before{content:'';position:absolute;inset:7px;border-radius:50%;background:rgba(21,13,48,.94);}
+  .ball{position:relative;width:64px;height:64px;border-radius:50%;border:3px solid var(--ink);
+    box-shadow:0 4px 0 var(--ink),inset -5px -6px 0 rgba(0,0,0,.16);overflow:hidden;
+    background:radial-gradient(circle at 33% 27%,var(--c2),var(--c) 72%);}
+  .face{position:absolute;left:50%;top:50%;width:80px;height:80px;transform:translate(-50%,-50%) scale(.8);transform-origin:center;}
+  .face i{position:absolute;background:var(--ink);}
+  .e1{left:20px;} .e2{right:20px;}
+  .face b{position:absolute;left:50%;transform:translateX(-50%);border:3px solid var(--ink);}
+  .f-excited i{top:25px;width:9px;height:12px;border-radius:50%;}
+  .f-excited b{top:40px;width:21px;height:14px;border:0;background:var(--ink);border-radius:4px 4px 13px 13px;}
+  .f-proud i{top:29px;width:11px;height:4px;border-radius:4px;}
+  .f-proud b{top:39px;width:19px;height:10px;border-radius:0 0 13px 13px;}
+  .f-focus i{top:27px;width:8px;height:9px;border-radius:3px;}
+  .f-focus b{top:45px;width:13px;height:0;border-width:3px 0 0;border-radius:0;}
+  .f-curious .e1{top:25px;width:11px;height:13px;border-radius:50%;}
+  .f-curious .e2{top:28px;width:7px;height:8px;border-radius:50%;}
+  .f-curious b{top:42px;width:9px;height:9px;border-radius:50%;border-top:3px solid var(--ink);}
+  .f-sleepy i{top:30px;width:10px;height:3px;border-radius:3px;}
+  .f-sleepy b{top:42px;width:9px;height:5px;border-radius:0 0 7px 7px;}
+  .nm{font-size:13px;font-weight:900;text-shadow:0 2px 7px rgba(0,0,0,.95);white-space:nowrap;}
+  .st{font-size:10px;color:var(--dim);font-weight:700;white-space:nowrap;text-shadow:0 1px 5px rgba(0,0,0,.95);}
+  .medal{display:inline-flex;align-items:center;gap:3px;padding:2px 8px 2px 5px;border-radius:999px;background:rgba(10,8,24,.72);border:1.5px solid rgba(255,205,76,.5);font-size:10px;font-weight:900;color:var(--gold);}
+  .l1{--c:var(--l1);--c2:var(--l1b);} .l2{--c:var(--l2);--c2:var(--l2b);} .l3{--c:var(--l3);--c2:var(--l3b);}
+  .disc{background:conic-gradient(var(--c) var(--p,0%),rgba(255,255,255,.08) 0);}
+  .current .disc{box-shadow:0 6px 16px rgba(0,0,0,.5),0 0 0 6px rgba(255,226,168,.18),0 0 28px rgba(255,200,120,.6);}
+
+  .gate{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;z-index:2;}
+  .gate .ring{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:2px dashed rgba(255,205,76,.65);background:rgba(255,205,76,.14);font-size:14px;box-shadow:0 0 14px rgba(255,205,76,.35);}
+  .gate .lbl{font-size:9.5px;font-weight:900;color:var(--gold);text-shadow:0 2px 6px rgba(0,0,0,.9);}
+
+  .feat{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;z-index:2;opacity:.95;}
+  .fstar{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:19px;background:radial-gradient(circle at 35% 30%,#5a4bd6,#2a1f5e);border:2px dashed rgba(255,226,168,.5);box-shadow:0 0 16px rgba(120,90,255,.5);}
+  .fnm{font-size:10.5px;font-weight:800;text-shadow:0 2px 6px rgba(0,0,0,.9);} .fsoon{font-size:8.5px;color:var(--dim);}
+</style>
+</head>
+<body>
+<div class="map">
+  <div class="tint"></div>
+  <svg class="routes" viewBox="0 0 1600 900" preserveAspectRatio="none">
+    <path d="M480,144 L768,189" stroke="rgba(192,168,255,.42)" stroke-width="2"/>
+    <path d="M528,423 L896,477" stroke="rgba(150,180,255,.44)" stroke-width="2"/>
+    <path d="M416,684 L736,756 L1056,684" stroke="rgba(111,214,190,.42)" stroke-width="2"/>
+  </svg>
+
+  <!-- L3 上 -->
+  <div class="planet l3" style="left:30%;top:16%"><span class="disc" style="--p:13%"><span class="ball"><span class="face f-focus"><i class="e1"></i><i class="e2"></i><b></b></span></span></span><span class="nm">听力理解</span><span class="st">2 / 15 套</span><span class="medal">🎧 1</span></div>
+  <div class="planet l3" style="left:48%;top:21%"><span class="disc" style="--p:0%"><span class="ball"><span class="face f-sleepy"><i class="e1"></i><i class="e2"></i><b></b></span></span></span><span class="nm">拼写进阶</span><span class="st">0 / 95 套</span><span class="medal">🔮 0</span></div>
+
+  <!-- L2 中 -->
+  <div class="planet l2 current" style="left:33%;top:47%"><span class="disc" style="--p:14%"><span class="ball"><span class="face f-excited"><i class="e1"></i><i class="e2"></i><b></b></span></span></span><span class="nm">单词跟读</span><span class="st">4 / 29 套 · 当前</span><span class="medal">🐦 0</span></div>
+  <div class="planet l2" style="left:56%;top:53%"><span class="disc" style="--p:3%"><span class="ball"><span class="face f-sleepy"><i class="e1"></i><i class="e2"></i><b></b></span></span></span><span class="nm">简单拼写</span><span class="st">1 / 27 套</span><span class="medal">✍️ 0</span></div>
+
+  <!-- L1 下 -->
+  <div class="planet l1" style="left:26%;top:76%"><span class="disc" style="--p:6%"><span class="ball"><span class="face f-sleepy"><i class="e1"></i><i class="e2"></i><b></b></span></span></span><span class="nm">常用单词</span><span class="st">2 / 32 套</span><span class="medal">🐻 0</span></div>
+  <div class="planet l1" style="left:46%;top:84%"><span class="disc" style="--p:27%"><span class="ball"><span class="face f-curious"><i class="e1"></i><i class="e2"></i><b></b></span></span></span><span class="nm">基础问候词</span><span class="st">6 / 22 套</span><span class="medal">🥚 0</span></div>
+  <div class="planet l1" style="left:66%;top:76%"><span class="disc" style="--p:0%"><span class="ball"><span class="face f-sleepy"><i class="e1"></i><i class="e2"></i><b></b></span></span></span><span class="nm">字母表</span><span class="st">0 / 1 套</span></div>
+
+  <div class="gate" style="left:66%;top:33%"><span class="ring">🚪</span><span class="lbl">能力测试</span></div>
+
+  <div class="feat" style="left:85%;top:58%"><span class="fstar">🔍</span><span class="fnm">看图猜词</span><span class="fsoon">即将上线</span></div>
+  <div class="feat" style="left:89%;top:76%"><span class="fstar">📖</span><span class="fnm">AI 绘本</span><span class="fsoon">即将上线</span></div>
+</div>
+</body>
+</html>
