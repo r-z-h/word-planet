@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import json
+import logging
 import uuid
 
 from fastapi import (
@@ -35,6 +36,8 @@ from ..services.lesson import current_set_no, is_set_complete, mark_set_complete
 from ..services.words import answer_text, word_payload
 
 router = APIRouter(prefix="/api/pronunciation", tags=["pronunciation"])
+
+logger = logging.getLogger("word_planet.score")
 
 
 def _require_pronunciation_kp(db: Session, user: User) -> KnowledgePoint:
@@ -322,6 +325,16 @@ def score_pronunciation(
         raise HTTPException(
             status_code=422, detail={"detail": "音频为空", "code": "EMPTY_AUDIO"}
         )
+    # 诊断：打印收到的音频长度与峰值振幅（peak≈0 表示采到的是静音）
+    try:
+        import array as _array
+
+        _a = _array.array("h")
+        _a.frombytes(pcm[: (len(pcm) // 2) * 2])
+        peak = max((abs(x) for x in _a), default=0)
+    except Exception:
+        peak = -1
+    logger.info("pronunciation score: word=%s bytes=%d peak=%d", word, len(pcm), peak)
     if not iflytek.is_configured():
         raise HTTPException(
             status_code=503,
@@ -330,10 +343,18 @@ def score_pronunciation(
     try:
         result = iflytek.assess_pcm(pcm, word.strip())
     except Exception as exc:
+        logger.warning("pronunciation score failed: word=%s err=%s", word, exc)
         raise HTTPException(
             status_code=502,
             detail={"detail": f"语音评分失败：{exc}", "code": "IFLYTEK_SCORE_FAILED"},
         )
+    logger.info(
+        "pronunciation score result: word=%s score=%s stars=%s source=%s",
+        word,
+        result.get("score"),
+        result.get("stars"),
+        result.get("source"),
+    )
     return PronunciationScoreResponse(**result)
 
 

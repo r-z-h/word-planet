@@ -71,6 +71,7 @@ const serviceError = ref(false)
 const volLevel = ref(0)
 const audioURL = ref(null)
 const unsupported = ref(false)
+const unsupportedReason = ref('')
 const judged = ref(false)
 
 let stream = null
@@ -83,7 +84,11 @@ let maxTimer = null
 const chunks = [] // Int16Array[]
 
 const stateText = computed(() => {
-  if (unsupported.value) return '这台设备听不到你读，听标准音后点「我读过了」'
+  if (unsupported.value) {
+    return unsupportedReason.value
+      ? `语音不可用：${unsupportedReason.value}`
+      : '这台设备听不到你读，听标准音后点「我读过了」'
+  }
   if (serviceError.value) return '评分服务暂时不可用，点「再读一次」'
   if (recording.value) return '正在听…（读完了点我）'
   if (judged.value) return '评分完成'
@@ -109,7 +114,25 @@ function toggle() {
 async function start() {
   if (props.disabled || unsupported.value) return
   const word = props.question.answer || props.question.stem
-  if (!navigator.mediaDevices?.getUserMedia || !window.AudioWorkletNode) {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    unsupportedReason.value = '浏览器没有麦克风接口'
+    unsupported.value = true
+    return
+  }
+  if (!window.AudioWorkletNode) {
+    unsupportedReason.value = '浏览器不支持 AudioWorklet'
+    unsupported.value = true
+    return
+  }
+  // 关键：在用户点击的同一同步任务里创建 AudioContext（早于任何 await），否则 Edge 会一直 suspended
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext
+    actx = new Ctx()
+    try {
+      actx.resume()
+    } catch {}
+  } catch (e) {
+    unsupportedReason.value = '无法创建音频上下文：' + ((e && e.name) || '未知')
     unsupported.value = true
     return
   }
@@ -117,7 +140,8 @@ async function start() {
     stream = await navigator.mediaDevices.getUserMedia({
       audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true }
     })
-  } catch {
+  } catch (e) {
+    unsupportedReason.value = '麦克风不可用：' + ((e && e.name) || '未知')
     unsupported.value = true
     return
   }
@@ -131,11 +155,12 @@ async function start() {
   recording.value = true
 
   try {
-    const Ctx = window.AudioContext || window.webkitAudioContext
-    actx = new Ctx({ sampleRate: 16000 })
+    try {
+      if (actx.state === 'suspended') await actx.resume()
+    } catch {}
     await actx.audioWorklet.addModule('/pcm-worklet.js')
     srcNode = actx.createMediaStreamSource(stream)
-    node = new AudioWorkletNode(actx, 'pcm16')
+    node = new AudioWorkletNode(actx, 'pcm16', { processorOptions: { minRms: 0 } })
     // 高通滤波：去掉低频轰鸣 / 电流声
     const hp = actx.createBiquadFilter()
     hp.type = 'highpass'
@@ -181,7 +206,8 @@ async function start() {
       chunks.push(new Int16Array(ab))
       if (ws && ws.readyState === 1) ws.send(ab)
     }
-  } catch {
+  } catch (e) {
+    unsupportedReason.value = '采音组件加载失败：' + ((e && e.name) || '未知')
     unsupported.value = true
     cleanupAudio()
     recording.value = false
@@ -290,6 +316,7 @@ function makeWav(pcmBytes) {
 async function stop() {
   if (!recording.value) return
   recording.value = false
+  const ctxState = actx ? actx.state : 'null'
   const word = props.question.answer || props.question.stem
   try {
     if (ws && ws.readyState === 1) ws.send('END')
@@ -301,7 +328,8 @@ async function stop() {
   let pcm = mergePcm()
   pcm = trimSilence(pcm)
   if (!pcm.length) {
-    // 没有采到音频 → 走降级
+    // 录完一个音频帧都没有
+    unsupportedReason.value = `没录到声音（音频上下文:${ctxState}）`
     unsupported.value = true
     return
   }

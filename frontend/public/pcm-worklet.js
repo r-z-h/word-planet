@@ -1,9 +1,12 @@
 // 采集并重采样到 PCM16 / 16kHz / 单声道，每 1600 样本（100ms）抛出
 class PCM16Processor extends AudioWorkletProcessor {
-  constructor() {
+  constructor(options) {
     super()
     this._out = []
     this._acc = 0
+    const opts = (options && options.processorOptions) || {}
+    // 噪声门阈值：默认 0.008；ASR 场景可传 minRms:0 关闭门限
+    this._minRms = opts.minRms != null ? opts.minRms : 0.008
   }
   process(inputs) {
     const ch = inputs[0] && inputs[0][0]
@@ -25,7 +28,7 @@ class PCM16Processor extends AudioWorkletProcessor {
             sum += v * v
           }
           const rms = Math.sqrt(sum / arr.length)
-          if (rms >= 0.015) this.port.postMessage(arr.buffer, [arr.buffer])
+          if (rms >= this._minRms) this.port.postMessage(arr.buffer, [arr.buffer])
           this._out = []
         }
       }

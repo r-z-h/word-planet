@@ -208,3 +208,76 @@ def iat_auth_url() -> str:
         f"&date={quote(date, safe='')}"
         f"&host={IAT_HOST}"
     )
+
+
+TTS_HOST = "tts-api.xfyun.cn"
+TTS_PATH = "/v2/tts"
+
+
+def _tts_auth_url() -> str:
+    from urllib.parse import quote
+
+    date = format_datetime(datetime.now(timezone.utc), usegmt=True)
+    origin = f"host: {TTS_HOST}\ndate: {date}\nGET {TTS_PATH} HTTP/1.1"
+    sign = base64.b64encode(
+        hmac.new(settings.iflytek_api_secret.encode(), origin.encode(), hashlib.sha256).digest()
+    ).decode()
+    auth = base64.b64encode(
+        (
+            f'api_key="{settings.iflytek_api_key}", algorithm="hmac-sha256", '
+            f'headers="host date request-line", signature="{sign}"'
+        ).encode()
+    ).decode()
+    return (
+        f"wss://{TTS_HOST}{TTS_PATH}"
+        f"?authorization={quote(auth, safe='')}"
+        f"&date={quote(date, safe='')}"
+        f"&host={TTS_HOST}"
+    )
+
+
+def tts(text: str, vcn: str = "xiaoxin", speed: int = 60) -> bytes:
+    """讯飞在线语音合成，返回 mp3(lame) 字节。失败抛异常。"""
+    if not is_configured():
+        raise RuntimeError("讯飞未配置（IFLYTEK_ENABLED / APP_ID / API_KEY / API_SECRET 缺失）")
+    text = (text or "").strip()
+    if not text:
+        return b""
+    import asyncio
+
+    import websockets
+
+    async def run() -> bytes:
+        url = _tts_auth_url()
+        async with websockets.connect(url, open_timeout=12) as ws:
+            await ws.send(
+                json.dumps(
+                    {
+                        "common": {"app_id": settings.iflytek_app_id},
+                        "business": {
+                            "aue": "lame",
+                            "sfl": 1,
+                            "auf": "audio/L16;rate=16000",
+                            "vcn": vcn,
+                            "speed": speed,
+                            "volume": 60,
+                            "pitch": 50,
+                            "tte": "UTF8",
+                        },
+                        "data": {"status": 2, "text": base64.b64encode(text.encode()).decode()},
+                    }
+                )
+            )
+            buf = b""
+            while True:
+                raw = await asyncio.wait_for(ws.recv(), timeout=20)
+                d = json.loads(raw)
+                if d.get("code") != 0:
+                    raise RuntimeError(f"tts {d.get('code')}: {d.get('message')}")
+                data = d.get("data") or {}
+                if data.get("audio"):
+                    buf += base64.b64decode(data["audio"])
+                if data.get("status") == 2:
+                    return buf
+
+    return asyncio.run(run())
